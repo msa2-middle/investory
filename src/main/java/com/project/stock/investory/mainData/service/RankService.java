@@ -2,6 +2,7 @@ package com.project.stock.investory.mainData.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.stock.investory.mainData.dto.IndexDto;
 import com.project.stock.investory.mainData.dto.RankDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,7 +38,7 @@ public class RankService {
     }
 
     //  HTTP 헤더 생성
-    private HttpHeaders createVolumeRankHttpHeaders() {
+    private HttpHeaders createRankHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
@@ -53,49 +54,28 @@ public class RankService {
         try {
             List<RankDto> responseDataList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
-            System.out.println("rootNodejjgus29" + rootNode);
             JsonNode outputNode = rootNode.get("output2");
+
             if (outputNode != null) {
                 for (JsonNode node : outputNode) {
-                    RankDto responseData = new RankDto();
-                    responseData.setCode(node.get("code").asText());
-                    responseData.setName(node.get("name").asText());
-                    responseData.setDaebi(node.get("daebi").asText());
-                    responseData.setPrice(node.get("price").asText());
-                    responseData.setChgrate(node.get("chgrate").asText());
-                    responseData.setAcmlVol(node.get("acml_vol").asText());
-                    responseData.setTradeAmt(node.get("trade_amt").asText());
-                    responseData.setChange(node.get("change").asText());
-                    responseData.setCttr(node.get("cttr").asText());
-                    responseData.setOpen(node.get("open").asText());
-                    responseData.setHigh(node.get("high").asText());
-                    responseData.setLow(node.get("low").asText());
-                    responseData.setHigh52(node.get("high52").asText());
-                    responseData.setLow52(node.get("low52").asText());
-                    responseData.setExpPrice(node.get("expprice").asText());
-                    responseData.setExpChange(node.get("expchange").asText());
-                    responseData.setExpChgGrate(node.get("expchggrate").asText());
-                    responseData.setExpCVol(node.get("expcvol").asText());
-                    responseData.setChgRate2(node.get("chgrate2").asText());
-                    responseData.setExpDaebi(node.get("expdaebi").asText());
-                    responseData.setRecPrice(node.get("recprice").asText());
-                    responseData.setUplmtPrice(node.get("uplmtprice").asText());
-                    responseData.setDnlmtPrice(node.get("dnlmtprice").asText());
-                    responseData.setStotPrice(node.get("stotprice").asText());
-                    responseDataList.add(responseData);
+
+                    // 자동 mapping
+                    RankDto dto = objectMapper.treeToValue(node, RankDto.class);
+                    responseDataList.add(dto);
                 }
             }
 
             return responseDataList;
 
         } catch (Exception e) {
-            throw new IllegalStateException("null");
+            throw new RuntimeException("rank 데이터 파싱 실패", e);
         }
     }
 
+    // get data
     public List<RankDto> getRank(String option) {
 
-        HttpHeaders headers = createVolumeRankHttpHeaders();
+        HttpHeaders headers = createRankHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder
