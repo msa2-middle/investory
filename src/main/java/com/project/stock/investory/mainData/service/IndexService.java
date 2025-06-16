@@ -3,13 +3,13 @@ package com.project.stock.investory.mainData.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.stock.investory.mainData.dto.IndexDto;
-import jakarta.persistence.Index;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -27,11 +27,6 @@ public class IndexService {
 
     @Value("${access_token}")
     private String accessToken;
-
-//    private final ObjectMapper objectMapper = new ObjectMapper();
-
-
-    //==========================================================
 
     //  WebClient: 비동기 HTTP 클라이언트로 KIS API 호출에 사용
     //  ObjectMapper: JSON 응답을 객체로 변환하는 Jackson 라이브러리 컴포넌트
@@ -56,43 +51,40 @@ public class IndexService {
         return headers;
     }
 
-
     //  API 응답 파싱
-    private List<IndexDto> parseIndex(String response) {
+    private Mono<List<IndexDto>> parseIndexData(String response) {
         try {
             List<IndexDto> responseDataList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output1");
+            JsonNode outputNode2 = rootNode.get("output2");
 
-            System.out.println("debug jjh" + outputNode);
-
+            // output1에는 현재 가격 및 상세 데이터 들어감
             if (outputNode != null) {
                 IndexDto dto = objectMapper.treeToValue(outputNode, IndexDto.class);
                 responseDataList.add(dto);
-//                for (JsonNode node : outputNode) {
-//                    // 자동 mapping
-//                    IndexDto dto = objectMapper.treeToValue(node, IndexDto.class);
-//                    responseDataList.add(dto);
-//                }
                 System.out.println(dto);
             }
 
-            return responseDataList;
+            // output2에는 과거 일자별 데이터(30영업일) 들어감 -> 사용하지 않음
+            if (outputNode2 != null) {
+                System.out.println("debug jjh" + rootNode);
+            }
+
+            return Mono.just(responseDataList);
 
         } catch (Exception e) {
-            throw new RuntimeException("index 데이터 파싱 실패", e);
+            return Mono.error(new RuntimeException("index 데이터 파싱 실패", e));
         }
     }
 
     // get data
-    public List<IndexDto> getIndices(String option) {
+    public Mono<List<IndexDto>> getIndexData(String option) {
 
         HttpHeaders headers = createIndexHttpHeaders();
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
 
-        System.out.println("debugjjh");
-
-        String response = webClient.get()
+        return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice")
                         .queryParam("FID_COND_MRKT_DIV_CODE", "U")
@@ -104,63 +96,7 @@ public class IndexService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
-
-        System.out.println("debugjjh" + response);
-
-        return parseIndex(response);
+                .flatMap(this::parseIndexData);
     }
-
-
-    //==========================================================
-
-
-//
-//
-//    // 지수 데이터 조회 메서드
-//    public List<IndexDto> getIndices(String option) {
-//
-//        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-//
-//        // KIS API로 HTTP GET 요청 (WebClient 사용)
-//        String response = WebClient.builder()
-//                .baseUrl(baseUrl)
-//                .build()
-//                .get()
-//                .uri(uriBuilder -> uriBuilder
-//                        .path("/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice")
-//                        .queryParam("FID_COND_MRKT_DIV_CODE", "U")
-//                        .queryParam("FID_INPUT_ISCD", option)
-//                        .queryParam("FID_INPUT_DATE_1", today)
-//                        .queryParam("FID_INPUT_DATE_2", today)
-//                        .queryParam("FID_PERIOD_DIV_CODE", "D")
-//                        .build())
-//                // 필수 헤더 설정
-//                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-//                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-//                .header("appkey", appKey)
-//                .header("appsecret", appSecret)
-//                .header("tr_id", "FHKUP03500100")
-//                .header("custtype", "P")
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        try {
-//            JsonNode root = objectMapper.readTree(response);
-//            List<IndexDto> result = new ArrayList<>();
-//            // output1 처리 (단일 객체)
-//            JsonNode output1 = root.path("output1");
-//
-//            if (output1.isObject() && !output1.isEmpty()) {
-//                IndexDto dto = objectMapper.treeToValue(output1, IndexDto.class);
-//                result.add(dto);
-//            }
-//
-//            return result;
-//
-//        } catch (Exception e) {throw new RuntimeException("KOSPI 데이터 파싱 실패", e);}
-//
-//    }
 
 }

@@ -23,6 +23,10 @@ public class StockPriceService {
     @Value("${access_token}")
     private String accessToken;
 
+    /**
+     * 여기서는 데이터가 중첩구조가 아니므로 간단하게 구현
+     * WebClient의 .bodyToMono(StockPriceDto.class)는 JSON에 없는 필드는 무시하고, DTO에 선언된 필드만 매핑
+     */
     public Mono<StockPriceDto> getStockPrice(String iscd) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
