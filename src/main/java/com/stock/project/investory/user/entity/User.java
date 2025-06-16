@@ -1,4 +1,4 @@
-package stock.com.project.investory.user.entity;
+package com.stock.project.investory.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

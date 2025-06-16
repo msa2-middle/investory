@@ -1,4 +1,4 @@
-package stock.com.project.investory.user.dto;
+package com.stock.project.investory.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

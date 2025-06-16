@@ -1,4 +1,4 @@
-package stock.com.project.investory.config;
+package com.stock.project.investory.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

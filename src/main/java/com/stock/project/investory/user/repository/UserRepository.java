@@ -1,7 +1,7 @@
-package stock.com.project.investory.user.repository;
+package com.stock.project.investory.user.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import stock.com.project.investory.user.entity.User;
+import com.stock.project.investory.user.entity.User;
 
 import java.util.Optional;
 
