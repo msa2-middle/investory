@@ -8,6 +8,8 @@ public class InvestoryApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(InvestoryApplication.class, args);
+		System.out.println("===========================[Ivestory Start]===========================");
+
 	}
 
 }
