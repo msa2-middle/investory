@@ -16,13 +16,11 @@ public class StockPriceController {
         this.stockPriceService = stockPriceService;
     }
 
-
     @GetMapping("/stock/{iscd}/price")
     public Mono<StockPriceDto> getPrice(@PathVariable String iscd, Model model) {
         Mono<StockPriceDto> response = stockPriceService.getStockPrice(iscd);
 
         return response;
-
     }
 
 }

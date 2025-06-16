@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -13,43 +14,44 @@ import java.util.List;
 @RequestMapping("/main")
 public class RankController {
 
-    private RankService rankService;
+    private final RankService rankService;
 
     @Autowired
     public RankController(RankService volumeRankService) {
         this.rankService = volumeRankService;
     }
 
+    /**
+     * Mono<List<T>>를 반환하면 Spring WebFlux가 자동으로 200 OK로 응답
+     */
     @GetMapping("/volume-rank")
-    public List<RankDto> getVolumeRank() {
+    public Mono<List<RankDto>> getVolumeRank() {
         String option = "1";
-        return rankService.getRank(option);
+        return rankService.getRankData(option);
     }
 
     @GetMapping("/trading-value-rank")
-    public List<RankDto> getTradingValueRank() {
+    public Mono<List<RankDto>> getTradingValueRank() {
         String option = "2";
-        return rankService.getRank(option);
+        return rankService.getRankData(option);
     }
 
     @GetMapping("/price-up-rank")
-    public List<RankDto> getPriceUpRank() {
+    public Mono<List<RankDto>> getPriceUpRank() {
         String option = "3";
-        return rankService.getRank(option);
+        return rankService.getRankData(option);
     }
 
     @GetMapping("/price-down-rank")
-    public List<RankDto> getPriceDownRank() {
+    public Mono<List<RankDto>> getPriceDownRank() {
         String option = "4";
-        return rankService.getRank(option);
+        return rankService.getRankData(option);
     }
 
     @GetMapping("/market-cap-rank")
-    public List<RankDto> getMarketCapRank() {
+    public Mono<List<RankDto>> getMarketCapRank() {
         String option = "5";
-        return rankService.getRank(option);
+        return rankService.getRankData(option);
     }
-
-
 
 }

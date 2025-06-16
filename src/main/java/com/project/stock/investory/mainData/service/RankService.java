@@ -2,7 +2,6 @@ package com.project.stock.investory.mainData.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.stock.investory.mainData.dto.IndexDto;
 import com.project.stock.investory.mainData.dto.RankDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +50,7 @@ public class RankService {
     }
 
     //  API 응답 파싱 (parseFVolumeRank)
-    private List<RankDto> parseRank(String response) {
+    private Mono<List<RankDto>> parseRankData(String response) {
         try {
             List<RankDto> responseDataList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -65,19 +65,19 @@ public class RankService {
                 }
             }
 
-            return responseDataList;
+            return Mono.just(responseDataList);
 
         } catch (Exception e) {
-            throw new RuntimeException("rank 데이터 파싱 실패", e);
+            return Mono.error(new RuntimeException("Rank 데이터 파싱 실패", e));
         }
     }
 
     // get data
-    public List<RankDto> getRank(String option) {
+    public Mono<List<RankDto>> getRankData(String option) {
 
         HttpHeaders headers = createRankHttpHeaders();
 
-        String response = webClient.get()
+        return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/ranking/fluctuation")
                         .queryParam("user_id", "jjgus29")
@@ -86,9 +86,7 @@ public class RankService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
-
-        return parseRank(response);
+                .flatMap(this::parseRankData);
     }
 
 }
