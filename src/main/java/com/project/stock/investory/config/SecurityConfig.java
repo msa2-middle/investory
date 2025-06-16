@@ -29,6 +29,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+
     // 비밀번호 암호화를 위한 Bean 등록
     @Bean
     public PasswordEncoder passwordEncoder() {
