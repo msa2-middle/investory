@@ -2,15 +2,12 @@ package stock.com.project.investory.stockInfo.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 import stock.com.project.investory.stockInfo.dto.*;
 
 import java.util.ArrayList;
@@ -40,62 +37,62 @@ public class StockInfoService {
 
 
     // 1. 상품 기본 조회
-    //API 요청에 필요한 인증 및 tr_id 같은 키 값을 셋팅합니다.
     private HttpHeaders createProductBasicHttpHeaders() {
         return getHttpHeaders("CTPF1604R");
     }
 
-    //목표: JSON 응답 문자열을 받아서, Java 객체(List<ResponseOutputDTO>)로 바꾸고 Mono로 감싸서 반환.
-    public Mono<ProductBasicDTO> getProductBasic(String mkscShrnIscd) {
+    public ProductBasicDTO getProductBasic(String mkscShrnIscd) {
         HttpHeaders headers = createProductBasicHttpHeaders();
 
-        return webClient.get()
-                //uriBuilder를 통해 쿼리 파라미터를 설정
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/quotations/search-info")
                         .queryParam("PDNO", mkscShrnIscd)
                         .queryParam("PRDT_TYPE_CD", 300)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
-                .retrieve()//응답을 받아오기 위한 준비
-                .bodyToMono(String.class)//응답을 **문자열(JSON)**로 받습니다
-                .flatMap(response -> parseFProductBasic(response, mkscShrnIscd));//응답 문자열을 파싱해서 DTO 리스트로 변환
+                .retrieve()
+                .bodyToMono(String.class)
+                .block(); //동기처리
+
+        return parseFProductBasic(response, mkscShrnIscd);
     }
 
-    private Mono<ProductBasicDTO> parseFProductBasic(String response, String mkscShrnIscd) {
+    private ProductBasicDTO parseFProductBasic(String response, String mkscShrnIscd) {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output");
 
-            if (outputNode != null) {
-                ProductBasicDTO dto = new ProductBasicDTO();
-                dto.setPdno(mkscShrnIscd);
-                //     dto.setStacYymm(node.get("stac_yymm").asText());
-                dto.setPrdtName(outputNode.get("prdt_name").asText());  // 이렇게  바꿔도 돼?? 이때 outputNode를 써야해 rootNode를 써야해?
-                dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
-                dto.setPrdtAbrvName(outputNode.get("prdt_abrv_name").asText());
-                dto.setPrdtSaleStatCd(outputNode.get("prdt_sale_stat_cd").asText());
-                dto.setPrdtRiskGradCd(outputNode.get("prdt_risk_grad_cd").asText());
-                dto.setPrdtClsfName(outputNode.get("prdt_clsf_name").asText());
-                dto.setIvstPrdtTypeCdName(outputNode.get("ivst_prdt_type_cd").asText());
-                dto.setFrstErlmDt(outputNode.get("frst_erlm_dt").asText());
+            if (outputNode == null) throw new IllegalStateException("output is null");
 
-                return Mono.just(dto);
-            }
-            return Mono.error(new IllegalStateException("output is null"));
+
+            ProductBasicDTO dto = new ProductBasicDTO();
+            dto.setPdno(mkscShrnIscd);
+            dto.setPrdtName(outputNode.get("prdt_name").asText());
+            dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
+            dto.setPrdtAbrvName(outputNode.get("prdt_abrv_name").asText());
+            dto.setPrdtSaleStatCd(outputNode.get("prdt_sale_stat_cd").asText());
+            dto.setPrdtRiskGradCd(outputNode.get("prdt_risk_grad_cd").asText());
+            dto.setPrdtClsfName(outputNode.get("prdt_clsf_name").asText());
+            dto.setIvstPrdtTypeCdName(outputNode.get("ivst_prdt_type_cd").asText());
+            dto.setFrstErlmDt(outputNode.get("frst_erlm_dt").asText());
+
+            return dto;
+
         } catch (Exception e) {
-            return Mono.error(e);
+            throw new RuntimeException("Failed to parse response", e);
         }
     }
+
 
     // 2. 주식 기본 조회
     private HttpHeaders createStockBasicHttpHeaders() {
         return getHttpHeaders("CTPF1002R");
     }
 
-    public Mono<StockBasicDTO> getStockBasic(String mkscShrnIscd) {
+    public StockBasicDTO getStockBasic(String mkscShrnIscd) {
         HttpHeaders headers = createStockBasicHttpHeaders();
 
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/quotations/search-stock-info")
                         .queryParam("PDNO", mkscShrnIscd)
                         .queryParam("PRDT_TYPE_CD", 300)
@@ -103,38 +100,40 @@ public class StockInfoService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> parseFStockBasic(response, mkscShrnIscd));
+                .block();
+        return parseFStockBasic(response, mkscShrnIscd);
 
     }
 
-    private Mono<StockBasicDTO> parseFStockBasic(String response, String mkscShrnIscd) {
+    private StockBasicDTO parseFStockBasic(String response, String mkscShrnIscd) {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output");
 
-            if (outputNode != null) {
-                StockBasicDTO dto = new StockBasicDTO();
-                dto.setPdno(mkscShrnIscd);
-                dto.setPrdtName(outputNode.get("prdt_name").asText());
-                dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
-                dto.setMketIdCd(outputNode.get("mket_id_cd").asText());
-                dto.setLstgStqt(outputNode.get("lstg_stqt").asText());
-                dto.setCpta(outputNode.get("cpta").asText());
-                dto.setPapr(outputNode.get("papr").asText());
-                dto.setThdtClpr(outputNode.get("thdt_clpr").asText());
-                dto.setBfdyClpr(outputNode.get("bfdy_clpr").asText());
-                dto.setClprChngDt(outputNode.get("clpr_chng_dt").asText());
-                dto.setKospi200ItemYn(outputNode.get("kospi200_item_yn").asText());
-                dto.setStdIdstClsfCdName(outputNode.get("std_idst_clsf_cd_name").asText());
-                dto.setIdxBztpLclsCdName(outputNode.get("idx_bztp_lcls_cd_name").asText());
-                dto.setAdmnItemYn(outputNode.get("admn_item_yn").asText());
-                dto.setTrStopYn(outputNode.get("tr_stop_yn").asText());
-                return Mono.just(dto);
-            }
-            return Mono.error(new IllegalStateException("output is null"));
+            if (outputNode == null) throw new IllegalStateException("output is null");
+
+
+            StockBasicDTO dto = new StockBasicDTO();
+            dto.setPdno(mkscShrnIscd);
+            dto.setPrdtName(outputNode.get("prdt_name").asText());
+            dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
+            dto.setMketIdCd(outputNode.get("mket_id_cd").asText());
+            dto.setLstgStqt(outputNode.get("lstg_stqt").asText());
+            dto.setCpta(outputNode.get("cpta").asText());
+            dto.setPapr(outputNode.get("papr").asText());
+            dto.setThdtClpr(outputNode.get("thdt_clpr").asText());
+            dto.setBfdyClpr(outputNode.get("bfdy_clpr").asText());
+            dto.setClprChngDt(outputNode.get("clpr_chng_dt").asText());
+            dto.setKospi200ItemYn(outputNode.get("kospi200_item_yn").asText());
+            dto.setStdIdstClsfCdName(outputNode.get("std_idst_clsf_cd_name").asText());
+            dto.setIdxBztpLclsCdName(outputNode.get("idx_bztp_lcls_cd_name").asText());
+            dto.setAdmnItemYn(outputNode.get("admn_item_yn").asText());
+            dto.setTrStopYn(outputNode.get("tr_stop_yn").asText());
+
+            return dto;
 
         } catch (Exception e) {
-            return Mono.error(e);
+            throw new IllegalStateException("output is null");
         }
     }
 
@@ -144,10 +143,10 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430100");
     }
 
-    public Mono<List<BalanceSheetDTO>> getBalanceSheet(String mkscShrnIscd) {
+    public List<BalanceSheetDTO> getBalanceSheet(String mkscShrnIscd) {
         HttpHeaders headers = createBalanceSheetHttpHeaders();
 
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/balance-sheet")
                         .queryParam("fid_cond_mrkt_div_code", "J")
                         .queryParam("fid_input_iscd", mkscShrnIscd)
@@ -156,10 +155,11 @@ public class StockInfoService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> ParseFBalanceSheet(response));
+                .block();
+        return ParseFBalanceSheet(response);
     }
 
-    private Mono<List<BalanceSheetDTO>> ParseFBalanceSheet(String response) {
+    private List<BalanceSheetDTO> ParseFBalanceSheet(String response) {
         try {
             List<BalanceSheetDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -182,9 +182,9 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
+            return dtoList;
         } catch (Exception e) {
-            return Mono.error(e);
+            throw new RuntimeException("대차대조표 파싱 실패", e);
         }
     }
 
@@ -194,10 +194,10 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430200");
     }
 
-    public Mono<List<IncomeStatementDTO>> getIncomeStatement(String mkscShrnIscd) {
+    public List<IncomeStatementDTO> getIncomeStatement(String mkscShrnIscd) {
         HttpHeaders headers = createIncomeStatementHttpHeaders();
 
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/income-statement")
                         .queryParam("fid_cond_mrkt_div_code", "J")
                         .queryParam("fid_input_iscd", mkscShrnIscd)
@@ -206,10 +206,11 @@ public class StockInfoService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> parseFIncomeStatement(response));
+                .block();
+        return parseFIncomeStatement(response);
     }
 
-    private Mono<List<IncomeStatementDTO>> parseFIncomeStatement(String response) {
+    private List<IncomeStatementDTO> parseFIncomeStatement(String response) {
         try {
             List<IncomeStatementDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -235,9 +236,9 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
+            return dtoList;
         } catch (Exception e) {
-            return Mono.error(e);
+            throw new RuntimeException("손익계산서 파싱 실패", e);
         }
     }
 
@@ -247,10 +248,10 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430300");
     }
 
-    public Mono<List<FinancialRatioDTO>> getFinancialRatio(String mkscShrnIscd) {
+    public List<FinancialRatioDTO> getFinancialRatio(String mkscShrnIscd) {
         HttpHeaders headers = createFinancialRatioHttpHeaders();
 
-        return webClient.get()
+        String response= webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/financial-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
                         .queryParam("fid_input_iscd", mkscShrnIscd)
@@ -259,10 +260,11 @@ public class StockInfoService {
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> ParseFFinancialRatio(response));
+                .block();
+        return ParseFFinancialRatio(response);
     }
 
-    private Mono<List<FinancialRatioDTO>> ParseFFinancialRatio(String response) {
+    private List<FinancialRatioDTO> ParseFFinancialRatio(String response) {
         try {
             List<FinancialRatioDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -283,9 +285,9 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
-        }catch (Exception e) {
-            return Mono.error(e);
+            return dtoList;
+        } catch (Exception e) {
+            throw new RuntimeException("재무재표 파싱 실패");
         }
     }
 
@@ -295,22 +297,23 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430400");
     }
 
-    public Mono<List<ProfitRatioDTO>> getProfitRatio(String mkscShrnIscd) {
+    public List<ProfitRatioDTO> getProfitRatio(String mkscShrnIscd) {
         HttpHeaders headers = createProfitRatioHttpHeaders();
 
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/profit-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd",mkscShrnIscd)
-                        .queryParam("fid_div_cls_code","1") //분류 구분 코드 (0:연말, 1:분기)
+                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> ParseFProfitRatio(response));
+                .block();
+        return  ParseFProfitRatio(response);
     }
 
-    private Mono<List<ProfitRatioDTO>> ParseFProfitRatio(String response) {
+    private List<ProfitRatioDTO> ParseFProfitRatio(String response) {
         try {
             List<ProfitRatioDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -327,12 +330,11 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
-        }catch (Exception e) {
-            return Mono.error(e);
+            return dtoList;
+        } catch (Exception e) {
+            throw  new RuntimeException("수익성 비율 파싱 실패");
         }
     }
-
 
 
     // 7. 안정성 비율 StabilityRatioDTO
@@ -340,22 +342,23 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430600");
     }
 
-    public Mono<List<StabilityRatioDTO>> getStabilityRatio(String mkscShrnIscd) {
+    public List<StabilityRatioDTO> getStabilityRatio(String mkscShrnIscd) {
         HttpHeaders headers = createStabilityRatioHttpHeaders();
 
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("uapi/domestic-stock/v1/finance/stability-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd",mkscShrnIscd)
+                        .queryParam("fid_input_iscd", mkscShrnIscd)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> ParseFStabilityRatio(response));
+                .block();
+        return ParseFStabilityRatio(response);
     }
 
-    private Mono<List<StabilityRatioDTO>> ParseFStabilityRatio(String response){
+    private List<StabilityRatioDTO> ParseFStabilityRatio(String response) {
         try {
             List<StabilityRatioDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -371,35 +374,36 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
-        }catch (Exception e) {
-            return Mono.error(e);
+            return dtoList;
+        } catch (Exception e) {
+            throw  new RuntimeException("안전성 비율 파싱 실패");
         }
     }
 
 
     // 8. 성장성 비율 GrowthRatioDTO
-    private HttpHeaders  createGrowthRatioHttpHeaders() {
+    private HttpHeaders createGrowthRatioHttpHeaders() {
         return getHttpHeaders("FHKST66430800");
     }
 
-    public Mono<List<GrowthRatioDTO>> getGrowthRatio(String mkscShrnIscd) {
+    public List<GrowthRatioDTO> getGrowthRatio(String mkscShrnIscd) {
         HttpHeaders headers = createGrowthRatioHttpHeaders();
 
-        return webClient.get()
+        String response= webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/growth-ratio")
-                        .queryParam("fid_cond_mrkt_div_code","J")
+                        .queryParam("fid_cond_mrkt_div_code", "J")
                         .queryParam("fid_input_iscd", mkscShrnIscd)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
-                .flatMap(response -> ParseFGrowthRatio(response));
+                .block();
+        return ParseFGrowthRatio(response);
 
     }
 
-    private Mono<List<GrowthRatioDTO>> ParseFGrowthRatio(String response){
+    private List<GrowthRatioDTO> ParseFGrowthRatio(String response) {
         try {
             List<GrowthRatioDTO> dtoList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
@@ -415,9 +419,9 @@ public class StockInfoService {
                     dtoList.add(dto);
                 }
             }
-            return Mono.just(dtoList);
-        }catch (Exception e) {
-            return Mono.error(e);
+            return dtoList;
+        } catch (Exception e) {
+            throw new RuntimeException("성장성 비율 파싱 실패");
         }
     }
 
