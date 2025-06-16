@@ -1,4 +1,4 @@
-package com.stock.project.investory.user.dto;
+package com.project.stock.investory.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

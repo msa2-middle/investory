@@ -1,12 +1,12 @@
-package com.stock.project.investory.user.controller;
+package com.project.stock.investory.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.stock.project.investory.user.dto.UserRequestDto;
-import com.stock.project.investory.user.dto.UserResponseDto;
-import com.stock.project.investory.user.service.UserService;
+import com.project.stock.investory.user.dto.UserRequestDto;
+import com.project.stock.investory.user.dto.UserResponseDto;
+import com.project.stock.investory.user.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")

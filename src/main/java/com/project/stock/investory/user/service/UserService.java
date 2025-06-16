@@ -1,13 +1,13 @@
-package com.stock.project.investory.user.service;
+package com.project.stock.investory.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.stock.project.investory.user.dto.UserRequestDto;
-import com.stock.project.investory.user.dto.UserResponseDto;
-import com.stock.project.investory.user.entity.User;
-import com.stock.project.investory.user.repository.UserRepository;
+import com.project.stock.investory.user.dto.UserRequestDto;
+import com.project.stock.investory.user.dto.UserResponseDto;
+import com.project.stock.investory.user.entity.User;
+import com.project.stock.investory.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 

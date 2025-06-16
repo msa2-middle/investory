@@ -1,4 +1,4 @@
-package com.stock.project.investory.config;
+package com.project.stock.investory.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
