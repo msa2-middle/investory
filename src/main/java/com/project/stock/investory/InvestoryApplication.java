@@ -1,4 +1,4 @@
-package com.project.stock.investory;
+package stock.com.project.investory;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,8 +8,6 @@ public class InvestoryApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(InvestoryApplication.class, args);
-		System.out.println("===========================[Investory Start]===========================");
-
 	}
 
 }
