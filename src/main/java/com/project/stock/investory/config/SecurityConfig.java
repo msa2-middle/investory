@@ -21,7 +21,9 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 "/api/**",
-                                "/**" // 모든 요청 허용 (개발용)
+                                "/connect", // websocket
+                                "/**" // 모든 요청 허용 (개발용),
+
                         ).permitAll()
                         .anyRequest().permitAll()
                 );
