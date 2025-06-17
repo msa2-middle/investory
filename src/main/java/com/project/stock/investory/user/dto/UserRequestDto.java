@@ -20,7 +20,6 @@ public class UserRequestDto {
     @NotBlank
     private String name;
 
-    @NotBlank
     private String phone;
 
     private Boolean isSocial = false;  // 기본값 false
