@@ -46,6 +46,9 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+
+	implementation 'io.netty:netty-resolver-dns-native-macos:4.1.100.Final:osx-aarch_64' // Apple Silicon (M1/M2)
+
 }
 
 tasks.named('test') {

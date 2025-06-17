@@ -41,7 +41,7 @@ public class KisWebSocketClient extends WebSocketClient {
                 {
                   "header": {
                     "tr_id": "H0STASP0",
-                    "tr_key": "005930" //
+                    "tr_key": "005930"
                   }
                 }
                 """;
@@ -57,8 +57,8 @@ public class KisWebSocketClient extends WebSocketClient {
     }
 
     @Override
-    public void onClose(int code, String reason, boolean remote) {
-        System.out.println("❌ 연결 종료: " + reason);
+    public void onClose(int code, String reason, boolean remote){
+        System.out.println("❌ 연결 종료: " + code + " / reason: " + reason + " / remote: " + remote);
     }
 
     @Override
