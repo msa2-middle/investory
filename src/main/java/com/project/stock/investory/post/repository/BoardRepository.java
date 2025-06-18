@@ -1,6 +1,6 @@
 package com.project.stock.investory.post.repository;
 
-import com.project.stock.investory.post.entitiy.Board;
+import com.project.stock.investory.post.entity.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

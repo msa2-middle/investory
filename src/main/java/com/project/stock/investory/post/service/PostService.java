@@ -2,8 +2,8 @@ package com.project.stock.investory.post.service;
 
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.RequestDto;
-import com.project.stock.investory.post.entitiy.Board;
-import com.project.stock.investory.post.entitiy.Post;
+import com.project.stock.investory.post.entity.Board;
+import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.repository.BoardRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import jakarta.persistence.EntityNotFoundException;

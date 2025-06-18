@@ -1,7 +1,7 @@
 package com.project.stock.investory.post.service;
 
-import com.project.stock.investory.post.entitiy.Post;
-import com.project.stock.investory.post.entitiy.PostLike;
+import com.project.stock.investory.post.entity.Post;
+import com.project.stock.investory.post.entity.PostLike;
 import com.project.stock.investory.post.repository.PostLikeRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.user.entity.User;
