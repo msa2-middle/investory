@@ -1,8 +1,7 @@
 package com.project.stock.investory.post.controller;
 
-import com.project.stock.investory.post.dto.PostCreateRequest;
 import com.project.stock.investory.post.dto.PostDto;
-import com.project.stock.investory.post.dto.PostUpdateRequest;
+import com.project.stock.investory.post.dto.RequestDto;
 import com.project.stock.investory.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +20,10 @@ public class PostController {
     /**
      * 요청 바디: PostCreateRequest (title, content)
      * userId는 임시로 111로 지정
-     * */
+     */
     @PostMapping("/stock/{stockId}/community")
     public ResponseEntity<PostDto> createPost(@PathVariable String stockId,
-                                              @RequestBody PostCreateRequest request) {
+                                              @RequestBody RequestDto request) {
 //                                              @AuthenticationPrincipal CustomUserDetails userDetails) {
 //        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
 
@@ -44,17 +43,17 @@ public class PostController {
         return ResponseEntity.ok(postDto);
     }
 
-    @PutMapping("/community/posts/{postId}")
+    @PatchMapping("/community/post/{postId}")
     public ResponseEntity<PostDto> updatePost(@PathVariable Long postId,
-                                              @RequestBody PostUpdateRequest request){
+                                              @RequestBody RequestDto request) {
 //                                              , @AuthenticationPrincipal CustomUserDetails userDetails) {
 //        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
         PostDto post = postService.updatePost(postId, request, userId);
         return ResponseEntity.ok(post);
     }
 
-    @DeleteMapping("/community/posts/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long postId){
+    @DeleteMapping("/community/post/{postId}")
+    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
 //                                           , @AuthenticationPrincipal CustomUserDetails userDetails) {
 //        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
         postService.deletePost(postId, userId);

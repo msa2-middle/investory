@@ -1,8 +1,7 @@
 package com.project.stock.investory.post.service;
 
-import com.project.stock.investory.post.dto.PostCreateRequest;
 import com.project.stock.investory.post.dto.PostDto;
-import com.project.stock.investory.post.dto.PostUpdateRequest;
+import com.project.stock.investory.post.dto.RequestDto;
 import com.project.stock.investory.post.entitiy.Board;
 import com.project.stock.investory.post.entitiy.Post;
 import com.project.stock.investory.post.repository.BoardRepository;
@@ -27,11 +26,9 @@ public class PostService {
     /**
      * [Create]
      * stock_id에 해당하는 Board가 없다면 자동 생성(board_id와 stock_id)
-     *
      */
-
     @Transactional // @Transactional 있어야 Board save & Post save 함께 처리됨 (롤백 안전)
-    public PostDto createPost(String stockId, PostCreateRequest request, Long userId) {
+    public PostDto createPost(String stockId, RequestDto request, Long userId) {
 
         // 1. stockId에 해당하는 Board 찾기 (없으면 새로 생성)
         Board board = boardRepository.findByStockId(stockId)
@@ -74,7 +71,6 @@ public class PostService {
      * 1. stock_id에 해당하는 모든 post를 read
      * 2. post_id의 개별 post 조회(1번 메서드를 통해 화면 상 특정 stock_id의 글들만 나타남)
      */
-
     // 1. stock_id에 해당하는 모든 post를 read
     @Transactional(readOnly = true)
     public List<PostDto> getPostsByStockId(String stockId) {
@@ -108,11 +104,12 @@ public class PostService {
                 .build();
     }
 
+
     /**
      * [Update]
-     * */
+     */
     @Transactional
-    public PostDto updatePost(Long postId, PostUpdateRequest request, Long userId) {
+    public PostDto updatePost(Long postId, RequestDto request, Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다."));
 
@@ -138,10 +135,10 @@ public class PostService {
                 .build();
     }
 
+
     /**
      * [Delete]
-     * */
-
+     */
     @Transactional
     public void deletePost(Long postId, Long userId) {
         Post post = postRepository.findById(postId)
