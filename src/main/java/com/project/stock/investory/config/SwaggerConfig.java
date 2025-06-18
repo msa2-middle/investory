@@ -10,15 +10,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Swagger 설정 클래스
- * - JWT 인증을 위한 Authorize 버튼 활성화
+ * Swagger 설정 클래스 (JWT 인증 연동)
+ *
+ * - Swagger UI 상단에 Authorize 버튼 활성화
+ * - JWT 토큰을 입력하면 이후 요청마다 Authorization 헤더 자동 부착
  */
 @Configuration
 @SecurityScheme(
-        name = "BearerAuth",               // 이 이름으로 보안 스키마를 등록하고 참조함
-        type = SecuritySchemeType.HTTP,   // HTTP 인증 방식 사용
-        scheme = "bearer",                // bearer 스키마 (Authorization: Bearer <token>)
-        bearerFormat = "JWT"              // 형식은 JWT
+        name = "BearerAuth",               // 보안 스키마 이름 (Authorize 버튼에서 사용됨)
+        type = SecuritySchemeType.HTTP,   // HTTP 인증 방식
+        scheme = "bearer",                // Bearer 토큰 스키마 (Authorization: Bearer <token>)
+        bearerFormat = "JWT"              // 토큰 형식 (JWT 명시)
 )
 public class SwaggerConfig {
 
@@ -38,7 +40,7 @@ public class SwaggerConfig {
                                         .bearerFormat("JWT")));
     }
 
-    // Swagger 화면에 표시될 API 기본 정보 설정
+    // Swagger UI 상단에 표시될 API 정보 설정
     private Info apiInfo() {
         return new Info()
                 .title("Investory")

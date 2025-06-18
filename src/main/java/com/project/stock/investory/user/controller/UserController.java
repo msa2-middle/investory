@@ -18,20 +18,23 @@ public class UserController {
 
     private final UserService userService;
 
+    // 회원가입
     @PostMapping("/signup")
     public ResponseEntity<UserResponseDto> signup(@Valid @RequestBody UserRequestDto request) {
         UserResponseDto response = userService.signup(request);
         return ResponseEntity.ok(response);
     }
 
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDto> login(@Valid @RequestBody UserLoginRequestDto request) {
         UserLoginResponseDto response = userService.login(request);
         return ResponseEntity.ok(response);
     }
 
+    // 마이페이지 조회
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDto> getMyPage(HttpServletRequest request) {
+    public ResponseEntity<UserResponseDto> getMyPage() {
         // SecurityContext에 저장된 사용자 ID 꺼내기
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -39,6 +42,7 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    // 회원정보 수정
     @PatchMapping("/me")
     public ResponseEntity<UserResponseDto> updateMyInfo(@RequestBody @Valid UserUpdateRequestDto request) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -47,6 +51,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    // 비밀번호 변경
     @PatchMapping("/password")
     public ResponseEntity<Void> updatePassword(@RequestBody @Valid PasswordUpdateRequestDto request) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -54,11 +59,12 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // 회원 탈퇴
     @DeleteMapping("/me")
     public ResponseEntity<Void> withdrawUser() {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         userService.withdrawUser(userId);
-        return ResponseEntity.noContent().build();  // 204 No Content
+        return ResponseEntity.noContent().build();
     }
 
 

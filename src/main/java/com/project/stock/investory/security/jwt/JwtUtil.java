@@ -1,4 +1,4 @@
-package com.project.stock.investory.util;
+package com.project.stock.investory.security.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -11,7 +11,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final Key key;
+    private final Key key; // JWT 서명(Signature)용 비밀키
     private static final long EXPIRATION_MS = 1000 * 60 * 60; // 1시간
 
     // application.properties에서 jwt.secret 값을 주입받음

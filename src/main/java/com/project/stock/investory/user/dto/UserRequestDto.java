@@ -21,6 +21,4 @@ public class UserRequestDto {
     private String name;
 
     private String phone;
-
-    private Boolean isSocial = false;  // 기본값 false
 }

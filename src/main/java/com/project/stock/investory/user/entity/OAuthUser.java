@@ -12,7 +12,8 @@ import lombok.*;
 public class OAuthUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "oauth_user_seq_generator")
+    @SequenceGenerator(name = "oauth_user_seq_generator", sequenceName = "oauth_user_seq", allocationSize = 1)
     private Long oauthUserId;
 
     @Column(nullable = false, length = 50)
