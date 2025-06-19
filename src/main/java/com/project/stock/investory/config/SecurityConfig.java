@@ -7,6 +7,7 @@ import com.project.stock.investory.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,17 +27,25 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger, 회원가입, 로그인 등 공개 API
                         .requestMatchers(
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/users/signup", "/users/login", "/oauth2/**",
-
-                                // StockInfoController는 모두 공개
-                                "/stock/**/analytics/**",
-
-                                // PostController에서 전체 조회만 공개 (create, 수정, 삭제 제외)
-                                "/stock/*/community",  // GET /stock/{stockId}/community 전체 조회 (permitAll)
-                                "/community/post/*"    // GET /community/post/{postId} 단일 조회 (permitAll)
+                                "/users/signup", "/users/login", "/oauth2/**"
                         ).permitAll()
+
+                        // stock 관련 GET 요청은 전체 공개
+                        .requestMatchers(HttpMethod.GET, "/stock/**").permitAll()
+
+                        // community posts 단일 조회 공개
+                        .requestMatchers(HttpMethod.GET, "/community/posts/**").permitAll()
+
+                        // 메인화면 Data 전체 공개
+                        .requestMatchers(HttpMethod.GET, "/main/**").permitAll()
+
+                        // 알림 조회 공개
+                        .requestMatchers(HttpMethod.GET, "/alarm/storage/**").permitAll()
+
+                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
