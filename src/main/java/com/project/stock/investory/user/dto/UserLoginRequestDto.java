@@ -2,23 +2,17 @@ package com.project.stock.investory.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class UserRequestDto {
+public class UserLoginRequestDto {
 
     @Email
     @NotBlank
     private String email;
 
-    @Size(min = 6, message = "비밀번호는 최소 6자 이상이어야 합니다.")
-    private String password;  // 소셜 로그인일 경우 null 허용
-
     @NotBlank
-    private String name;
-
-    private String phone;
+    private String password;  // 소셜 로그인은 로그인 자체를 따로 구현 (ex. OAuth 로그인 요청)
 }

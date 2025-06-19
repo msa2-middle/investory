@@ -27,10 +27,10 @@ public class User {
     @Column(nullable = false, length = 50)
     private String name; // 이름
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = true, length = 20)
     private String phone; // 전화번호
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NUMBER(1)")
     @Builder.Default
     private Integer isSocial = 0;  // 소셜 로그인 여부 (0: 일반, 1: 소셜)
 
@@ -41,4 +41,33 @@ public class User {
     private LocalDateTime updatedAt; // 수정일
 
     private LocalDateTime deletedAt;  // 탈퇴일 (soft delete)
+
+    // 최초 저장 시 실행 (회원가입 시점)
+    @PrePersist
+    public void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    // 수정 시 실행 (회원정보 수정 등)
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 사용자 정보 수정 메서드
+    public void updateInfo(String name, String phone) {
+        this.name = name;
+        this.phone = phone != null ? phone : this.phone;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
 }
