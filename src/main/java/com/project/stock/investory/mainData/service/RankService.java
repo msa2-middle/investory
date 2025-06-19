@@ -3,6 +3,7 @@ package com.project.stock.investory.mainData.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.stock.investory.mainData.dto.RankDto;
+import com.project.stock.investory.stockInfo.dto.StockApiResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -89,5 +90,14 @@ public class RankService {
                 .flatMap(this::parseRankData);
     }
 
+
+    // 디비에 저장하기 위해 필요 (StockApiResponseDTO로 변환하기 위해)
+    public Mono<List<StockApiResponseDTO>> getStockIdAndNameOnly(String option) {
+        return getRankData(option) // 기존 RankDto 리스트 반환하는 내부 메서드
+                .map(rankList -> rankList.stream()
+                        .map(rank -> new StockApiResponseDTO(rank.getCode(), rank.getName()))
+                        .toList()
+                );
+    }
 }
 
