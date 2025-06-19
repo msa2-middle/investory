@@ -33,6 +33,5 @@ public class StockPriceDto {
         @JsonProperty("acml_vol")
         private String volume; // 누적 거래량
 
-        // 필요시 추가 필드 구현
     }
 }

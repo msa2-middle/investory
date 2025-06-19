@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
+
     // Board로 조회
     List<Post> findByBoard(Board board);
 

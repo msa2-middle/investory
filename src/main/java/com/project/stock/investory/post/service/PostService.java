@@ -1,7 +1,7 @@
 package com.project.stock.investory.post.service;
 
 import com.project.stock.investory.post.dto.PostDto;
-import com.project.stock.investory.post.dto.RequestDto;
+import com.project.stock.investory.post.dto.PostRequestDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.repository.BoardRepository;
@@ -28,7 +28,7 @@ public class PostService {
      * stock_id에 해당하는 Board가 없다면 자동 생성(board_id와 stock_id)
      */
     @Transactional // @Transactional 있어야 Board save & Post save 함께 처리됨 (롤백 안전)
-    public PostDto createPost(String stockId, RequestDto request, Long userId) {
+    public PostDto createPost(String stockId, PostRequestDto request, Long userId) {
 
         // 1. stockId에 해당하는 Board 찾기 (없으면 새로 생성)
         Board board = boardRepository.findByStockId(stockId)
@@ -109,7 +109,7 @@ public class PostService {
      * [Update]
      */
     @Transactional
-    public PostDto updatePost(Long postId, RequestDto request, Long userId) {
+    public PostDto updatePost(Long postId, PostRequestDto request, Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다."));
 
