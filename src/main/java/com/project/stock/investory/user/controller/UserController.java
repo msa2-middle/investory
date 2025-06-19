@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import com.project.stock.investory.user.service.UserService;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "BearerAuth")
 public class UserController {
 
     private final UserService userService;

@@ -27,7 +27,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/swagger-ui/**", "/v3/api-docs/**", "/api/users/**", "/oauth2/**"
+                                "/swagger-ui/**", "/v3/api-docs/**",
+                                "/users/signup", "/users/login", "/oauth2/**",
+
+                                // StockInfoController는 모두 공개
+                                "/stock/**/analytics/**",
+
+                                // PostController에서 전체 조회만 공개 (create, 수정, 삭제 제외)
+                                "/stock/*/community",  // GET /stock/{stockId}/community 전체 조회 (permitAll)
+                                "/community/post/*"    // GET /community/post/{postId} 단일 조회 (permitAll)
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
