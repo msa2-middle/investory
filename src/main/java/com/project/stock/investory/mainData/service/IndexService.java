@@ -57,19 +57,19 @@ public class IndexService {
             List<IndexDto> responseDataList = new ArrayList<>();
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output1");
-            JsonNode outputNode2 = rootNode.get("output2");
+//            JsonNode outputNode2 = rootNode.get("output2");
 
             // output1에는 현재 가격 및 상세 데이터 들어감
             if (outputNode != null) {
                 IndexDto dto = objectMapper.treeToValue(outputNode, IndexDto.class);
                 responseDataList.add(dto);
-                System.out.println(dto);
+//                System.out.println(dto);
             }
 
             // output2에는 과거 일자별 데이터(30영업일) 들어감 -> 사용하지 않음
-            if (outputNode2 != null) {
-                System.out.println("debug jjh" + rootNode);
-            }
+//            if (outputNode2 != null) {
+//                System.out.println("debug jjh" + rootNode);
+//            }
 
             return Mono.just(responseDataList);
 

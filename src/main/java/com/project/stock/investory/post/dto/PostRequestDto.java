@@ -13,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RequestDto {
+public class PostRequestDto {
     private String title;
     private String content;
 }

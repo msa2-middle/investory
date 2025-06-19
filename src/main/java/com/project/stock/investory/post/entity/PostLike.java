@@ -44,5 +44,5 @@ public class PostLike {
         this.createdAt = LocalDateTime.now();
     }
 
-
 }
+
