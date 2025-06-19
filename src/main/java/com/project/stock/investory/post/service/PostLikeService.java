@@ -40,10 +40,23 @@ public class PostLikeService {
     }
 
     public long countLikes(Long postId) {
+
+        // postId 존재 여부 확인
+        if (!postRepository.existsById(postId)) {
+            throw new IllegalArgumentException("게시글이 존재하지 않습니다. " + postId);
+        }
+
         return postLikeRepository.countByPost_PostId(postId);
     }
 
     public boolean hasUserLiked(Long userId, Long postId) {
+
+        // 1. postId 존재 여부 확인
+        if (!postRepository.existsById(postId)) {
+            throw new IllegalArgumentException("게시글이 존재하지 않습니다. ");
+        }
+
+        // 2. 좋아요 여부 확인
         return postLikeRepository.findByUser_UserIdAndPost_PostId(userId, postId).isPresent();
     }
 }
