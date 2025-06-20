@@ -2,6 +2,8 @@ package com.project.stock.investory.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -21,7 +23,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 255)
     private String email; // 이메일
 
-    @Column(length = 255)
+    @Column(length = 255, nullable = true)
     private String password;  // 비밀번호 (소셜 로그인 시 null 가능)
 
     @Column(nullable = false, length = 50)
@@ -34,38 +36,28 @@ public class User {
     @Builder.Default
     private Integer isSocial = 0;  // 소셜 로그인 여부 (0: 일반, 1: 소셜)
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt; // 가입일
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt; // 가입일 (자동 생성)
 
+    @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt; // 수정일
+    private LocalDateTime updatedAt; // 수정일 (자동 수정)
 
     private LocalDateTime deletedAt;  // 탈퇴일 (soft delete)
-
-    // 최초 저장 시 실행 (회원가입 시점)
-    @PrePersist
-    public void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-    }
-
-    // 수정 시 실행 (회원정보 수정 등)
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
     // 사용자 정보 수정 메서드
     public void updateInfo(String name, String phone) {
         this.name = name;
-        this.phone = phone != null ? phone : this.phone;
+        this.phone = phone;
     }
 
+    // 비밀번호 변경 메서드
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
 
+    // 탈퇴 처리 (soft delete)
     public void withdraw() {
         this.deletedAt = LocalDateTime.now();
     }

@@ -29,5 +29,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Modifying
     @Query("UPDATE Post p SET p.likeCount = CASE WHEN p.likeCount > 0 THEN p.likeCount - 1 ELSE 0 END WHERE p.postId = :postId")
     void decrementLikeCount(@Param("postId") Long postId);
+
+    // 특정 사용자가 작성한 게시글 전체 조회
+    List<Post> findByUserId(Long userId);
+
 }
 
