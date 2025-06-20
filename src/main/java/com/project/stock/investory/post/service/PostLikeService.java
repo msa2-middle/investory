@@ -3,6 +3,7 @@ package com.project.stock.investory.post.service;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
 import com.project.stock.investory.post.exception.AuthenticationRequiredException;
+import com.project.stock.investory.post.exception.PostLikeDuplicatedException;
 import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.exception.UserNotFoundException;
 import com.project.stock.investory.post.repository.PostLikeRepository;
@@ -23,45 +24,62 @@ public class PostLikeService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
+    // 좋아요 표시
     @Transactional
     public void likePost(Long userId, Long postId) {
 
-        // userId null 체크
-        if (userId == null) {
-            throw new AuthenticationRequiredException();
-        }
-
         // 좋아요 눌렀는지 체크
         if (postLikeRepository.findByUser_UserIdAndPost_PostId(userId, postId).isPresent()) {
-            throw new IllegalStateException("이미 좋아요를 누른 게시글입니다.");
+            throw new PostLikeDuplicatedException();
         }
 
+        // Option<Post> 객체 생성 및 postId 유효성 검사
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostNotFoundException());
+
+        // Option<User> 객체 생성 및 userId 유효성 검사
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException());
 
+        // PostLike 객체 생성
         PostLike postLike = new PostLike(post, user);
+
+        // post테이블의 like_count +1
+        postRepository.incrementLikeCount(postId);
+
+        // PostLike 저장
         postLikeRepository.save(postLike);
     }
 
+    // 좋아요 해제
     @Transactional
     public void unlikePost(Long userId, Long postId) {
 
-        // userId null 체크
+        /*@AuthenticationPrincipal을 사용해 컨트롤러에서 userId를 가져오는 경우,
+        Spring Security 필터 체인 덕분에 이 userId가 null인 경우는 거의 없음
+        하지만 방어적인 코드로써 이렇게 명시적으로 체크*/
         if (userId == null) {
             throw new AuthenticationRequiredException();
         }
 
-        // postId 존재 여부 확인
-        if (!postRepository.existsById(postId)) {
-            throw new PostNotFoundException();
-        }
+        // Option<Post> 객체 생성 및 postId 유효성 검사
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException());
 
+        // 반환 타입이 Optional<PostLike>인 건, 해당 사용자가 해당 게시글에 좋아요를 누르지 않았을 수도 있기 때문
         Optional<PostLike> postLikeOpt = postLikeRepository.findByUser_UserIdAndPost_PostId(userId, postId);
+
+        /*Optional 객체에서 ifPresent() 메서드는
+        postLikeOpt 안에 PostLike 객체가 실제로 존재할 때만 -> 유효성 자동 처리
+        괄호 안의 동작(postLikeRepository::delete)을 실행*/
         postLikeOpt.ifPresent(postLikeRepository::delete);
+
+        // post테이블의 like_count -1(음수방지처리)
+        postRepository.decrementLikeCount(postId);
     }
 
+
+    // 좋아요 개수세기 -> 실제로 사용하지않고 Post 에있는 필드로 클라이언트 화면에 표시
     public long countLikes(Long postId) {
 
         // 1. postId 존재 여부 확인
@@ -71,6 +89,7 @@ public class PostLikeService {
 
         return postLikeRepository.countByPost_PostId(postId);
     }
+
 
     public boolean hasUserLiked(Long userId, Long postId) {
 

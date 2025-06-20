@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice(basePackages = "com.project.stock.investory.post") // post 패키지에만 적용
 public class PostExceptionHandler {
 
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<String> handleBusinessException(BusinessException ex) {
+        return ResponseEntity.status(ex.getHttpStatus()).body(ex.getMessage());
+    }
+
     /**
      * [400]
      */
