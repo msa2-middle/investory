@@ -4,9 +4,11 @@ import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
+import com.project.stock.investory.post.exception.AuthenticationRequiredException;
+import com.project.stock.investory.post.exception.PostAccessDeniedException;
+import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.repository.BoardRepository;
 import com.project.stock.investory.post.repository.PostRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -85,7 +87,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostDto getPostById(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new PostNotFoundException());
         return convertToDto(post);
     }
 
@@ -111,7 +113,7 @@ public class PostService {
     @Transactional
     public PostDto updatePost(Long postId, PostRequestDto request, Long userId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new PostNotFoundException());
 
         // 작성자 확인
         if (!post.getUserId().equals(userId)) {
@@ -141,12 +143,19 @@ public class PostService {
      */
     @Transactional
     public void deletePost(Long postId, Long userId) {
+
+        // userId null 체크
+        if (userId == null) {
+            throw new AuthenticationRequiredException();
+        }
+
+        // 게시글 생성 및 예외처리
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new PostNotFoundException());
 
         // 작성자 확인
         if (!post.getUserId().equals(userId)) {
-            throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
+            throw new PostAccessDeniedException();
         }
 
         postRepository.delete(post);
