@@ -12,12 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-//@RequestMapping("/stock/{stockId}/community")
 @RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
-    private Long userId;  // 현재 로그인한 유저의 id -> 추후 로그인 연동시 삭제 및 컨트롤러 코드 수정
 
     /**
      * 요청 바디: PostCreateRequest (title, content)
