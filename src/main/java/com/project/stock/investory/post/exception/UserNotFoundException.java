@@ -1,7 +1,9 @@
 package com.project.stock.investory.post.exception;
 
-public class UserNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class UserNotFoundException extends BusinessException {
     public UserNotFoundException() {
-        super("유저가 존재하지 않습니다.");
+        super("유저가 존재하지 않습니다.", HttpStatus.NOT_FOUND); // 404
     }
 }

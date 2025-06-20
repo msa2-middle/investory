@@ -10,7 +10,6 @@ import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.repository.BoardRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,7 +76,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public List<PostDto> getPostsByStockId(String stockId) {
         Board board = boardRepository.findByStockId(stockId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 종목의 게시판이 없습니다."));
+                .orElseThrow(() -> new PostNotFoundException());
         return postRepository.findByBoard(board).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -117,7 +116,7 @@ public class PostService {
 
         // 작성자 확인
         if (!post.getUserId().equals(userId)) {
-            throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
+            throw new PostAccessDeniedException();
         }
 
         post.setTitle(request.getTitle());
