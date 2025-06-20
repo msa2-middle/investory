@@ -2,6 +2,7 @@ package com.project.stock.investory.user.service;
 
 import com.project.stock.investory.user.dto.*;
 import com.project.stock.investory.user.entity.User;
+import com.project.stock.investory.user.exception.*;
 import com.project.stock.investory.user.repository.UserRepository;
 import com.project.stock.investory.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +28,7 @@ public class UserService {
 
         // 이메일 중복 확인
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
-
-        // 비밀번호가 없을 경우 예외
-        if ((request.getPassword() == null || request.getPassword().isBlank())) {
-            throw new IllegalArgumentException("비밀번호는 필수입니다.");
+            throw new DuplicateEmailException();
         }
 
         // 비밀번호 암호화
@@ -65,21 +60,24 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserLoginResponseDto login(UserLoginRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+                .orElseThrow(UserNotFoundException::new);
 
+        // 탈퇴한 사용자 접근 차단
         if (user.getDeletedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "탈퇴한 사용자입니다.");
+            throw new UserWithdrawnException();
         }
 
-        if (user.getIsSocial() == 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "소셜 로그인 사용자는 일반 로그인할 수 없습니다.");
+        // 소셜 회원인데 비밀번호가 없는 경우 → 일반 로그인 차단
+        if (user.getPassword() == null || user.getIsSocial() == 1) {
+            throw new InvalidSocialUserException();
         }
 
+        // 비밀번호 불일치
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.");
+            throw new InvalidPasswordException();
         }
 
-        // JWT 발급
+        // 로그인 성공 → JWT 토큰 발급
         String token = jwtUtil.generateToken(user.getUserId(), user.getEmail());
 
         return UserLoginResponseDto.builder()
@@ -97,7 +95,7 @@ public class UserService {
 
         // 탈퇴한 사용자 접근 차단
         if (user.getDeletedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "탈퇴한 사용자입니다.");
+            throw new UserWithdrawnException();
         }
 
         return UserResponseDto.builder()
@@ -126,13 +124,14 @@ public class UserService {
     public void updatePassword(Long userId, PasswordUpdateRequestDto request) {
         User user = validateUserExistsOrThrow(userId);
 
-        if (user.getIsSocial() == 1) {
-            throw new IllegalArgumentException("소셜 로그인 사용자는 비밀번호를 변경할 수 없습니다.");
+        // 소셜 로그인 사용자는 비밀번호 변경 불가
+        if (user.getPassword() == null || user.getIsSocial() == 1) {
+            throw new InvalidSocialUserException();
         }
 
         // 현재 비밀번호 검증
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            throw new InvalidPasswordException();
         }
 
         // 새 비밀번호 암호화 및 저장
@@ -145,8 +144,9 @@ public class UserService {
     public void withdrawUser(Long userId) {
         User user = validateUserExistsOrThrow(userId);
 
+        // 이미 탈퇴한 사용자인 경우 예외 처리
         if (user.getDeletedAt() != null) {
-            throw new IllegalStateException("이미 탈퇴한 사용자입니다.");
+            throw new UserWithdrawnException();
         }
 
         user.withdraw();
@@ -155,8 +155,9 @@ public class UserService {
     // 공통 사용자 조회 유틸리티 메서드
     private User validateUserExistsOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
     }
+
 
 
 }

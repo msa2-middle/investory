@@ -11,5 +11,6 @@ public class UserUpdateRequestDto {
     @NotBlank
     private String name;
 
+    @NotBlank
     private String phone;
 }
