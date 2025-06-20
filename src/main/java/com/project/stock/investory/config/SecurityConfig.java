@@ -39,7 +39,7 @@
                             // Swagger, 회원가입, 로그인 등 공개 API
                             .requestMatchers(
                                     "/swagger-ui/**", "/v3/api-docs/**",
-                                    "/users/signup", "/users/login", "/oauth2/**"
+                                    "/users/signup", "/users/login", "/oauth2/**", "/alarm/**"
                             ).permitAll()
 
                             // stock 관련 GET 요청은 전체 공개
