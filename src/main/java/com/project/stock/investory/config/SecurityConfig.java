@@ -11,6 +11,7 @@
     import org.springframework.context.annotation.Configuration;
     import org.springframework.core.annotation.Order;
     import org.springframework.http.HttpMethod;
+    import org.springframework.security.config.Customizer;
     import org.springframework.security.config.annotation.web.builders.HttpSecurity;
     import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
     import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,7 +44,10 @@
                             // Swagger, 회원가입, 로그인 등 공개 API
                             .requestMatchers(
                                     "/swagger-ui/**", "/v3/api-docs/**",
-                                    "/users/signup", "/users/login", "/oauth2/**", "/alarm/**"
+                                    "/users/signup", "/users/login", "/oauth2/**", "/alarm/**",
+                                    "/users/password-reset/send-code",
+                                    "/users/password-reset/verify-code",
+                                    "/users/password-reset/reset"
                             ).permitAll()
 
                             // stock 관련 GET 요청은 전체 공개
@@ -59,14 +63,13 @@
                             .requestMatchers(HttpMethod.GET, "/alarm/storage/**").permitAll()
 
                             // 댓글 조회 GET 요청 전체 공개
-                            .requestMatchers(HttpMethod.GET, "/post/*/comments/**").permitAll()
-
-                            // 
-                            .requestMatchers("/users/password-reset/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/post/**").permitAll()
 
                             // 나머지는 인증 필요
                             .anyRequest().authenticated()
                     )
+
+                    .anonymous(Customizer.withDefaults())
 
                     // 소셜 로그인 설정 (로그인 성공 시 JWT 발급)
                     .oauth2Login(oauth2 -> oauth2

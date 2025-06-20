@@ -56,6 +56,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
                 return;
             }
+        } else {
+            // JWT 헤더 없으면 anonymous 토큰 넣어줌
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken("anonymousUser", null, Collections.emptyList())
+            );
         }
 
         // 필터 체인 계속 진행

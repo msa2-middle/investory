@@ -21,6 +21,7 @@ public class PasswordResetService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     // 메모리 임시 저장소 (이메일 - 인증코드)
     private Map<String, String> verificationCodes;
@@ -48,7 +49,13 @@ public class PasswordResetService {
         verificationCodes.put(request.getEmail(), code);
 
         // TODO: 실제 이메일 전송 로직 구현 (지금은 콘솔 출력)
-        System.out.println("발송된 인증코드 (임시): " + code);
+        // System.out.println("발송된 인증코드 (임시): " + code);
+        // 코드 발송
+        emailService.sendEmail(
+                request.getEmail(),
+                "비밀번호 재설정 인증코드",
+                "인증코드: " + code
+        );
     }
 
     // 2️⃣ 인증코드 검증
