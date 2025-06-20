@@ -6,6 +6,7 @@ import com.project.stock.investory.user.repository.OAuthUserRepository;
 import com.project.stock.investory.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -50,11 +51,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             email = (String) attributes.get("email");
             name = (String) attributes.get("name");
         } else {
-            throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
+            // throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
+            throw new AuthenticationServiceException("지원하지 않는 소셜 로그인입니다.");
         }
 
         if (email == null || providerUserId == null) {
-            throw new IllegalArgumentException("소셜 로그인에서 필수 정보 누락");
+            //throw new IllegalArgumentException("소셜 로그인에서 필수 정보 누락");
+            throw new AuthenticationServiceException("소셜 로그인에서 필수 정보 누락");
         }
 
         // 이메일 기준으로 User 먼저 찾기

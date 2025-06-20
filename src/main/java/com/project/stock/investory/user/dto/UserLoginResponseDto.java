@@ -11,5 +11,5 @@ public class UserLoginResponseDto {
     private Long userId;
     private String email;
     private String name;
-    private String accessToken;  // JWT 추가
+    private String accessToken;  // JWT 토큰 반환
 }

@@ -1,14 +1,14 @@
 package com.project.stock.investory.user.controller;
 
 import com.project.stock.investory.user.dto.*;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.project.stock.investory.user.service.UserService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -31,17 +31,17 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 마이페이지 조회
+    // 마이페이지 - 회원정보 조회
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getMyPage() {
         // SecurityContext에 저장된 사용자 ID 꺼내기
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        UserResponseDto user = userService.getUserById(userId);
+        UserResponseDto user = userService.getMyInfo(userId);
         return ResponseEntity.ok(user);
     }
 
-    // 회원정보 수정
+    // 마이페이지 - 회원정보 수정
     @PatchMapping("/me")
     public ResponseEntity<UserResponseDto> updateMyInfo(@RequestBody @Valid UserUpdateRequestDto request) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -50,7 +50,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 비밀번호 변경
+    // 마이페이지 - 비밀번호 변경
     @PatchMapping("/password")
     public ResponseEntity<Void> updatePassword(@RequestBody @Valid PasswordUpdateRequestDto request) {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -62,8 +62,24 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<Void> withdrawUser() {
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        userService.withdrawUser(userId);
+        userService.withdraw(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 마이페이지 - 내가 작성한 게시글 리스트
+    @GetMapping("/me/posts")
+    public ResponseEntity<List<PostSimpleResponseDto>> getMyPosts() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<PostSimpleResponseDto> myPosts = userService.getMyPosts(userId);
+        return ResponseEntity.ok(myPosts);
+    }
+
+    // 마이페이지 - 내가 좋아요한 게시글 리스트
+    @GetMapping("/me/likes")
+    public ResponseEntity<List<PostSimpleResponseDto>> getMyLikedPosts() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<PostSimpleResponseDto> likedPosts = userService.getMyLikedPosts(userId);
+        return ResponseEntity.ok(likedPosts);
     }
 
 

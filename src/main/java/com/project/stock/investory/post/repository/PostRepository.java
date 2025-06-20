@@ -16,5 +16,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Board가 Post에서 @ManyToOne으로 연결되어 있으므로 Board 엔티티 내부의 stockId 사용 가능
     Optional<Post> findByPostIdAndBoard_StockId(Long postId, String stockId);
+
+    // 특정 사용자가 작성한 게시글 전체 조회
+    List<Post> findByUserId(Long userId);
 }
 
