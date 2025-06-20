@@ -82,5 +82,19 @@ public class UserController {
         return ResponseEntity.ok(likedPosts);
     }
 
+    // 마이페이지 - 내가 작성한 댓글 리스트 조회
+    @GetMapping("/me/comments")
+    public ResponseEntity<List<CommentSimpleResponseDto>> getMyComments() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<CommentSimpleResponseDto> myComments = userService.getMyComments(userId);
+        return ResponseEntity.ok(myComments);
+    }
 
+    // 마이페이지 - 내가 좋아요한 댓글 리스트 조회
+    @GetMapping("/me/liked-comments")
+    public ResponseEntity<List<CommentSimpleResponseDto>> getMyLikedComments() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<CommentSimpleResponseDto> likedComments = userService.getMyLikedComments(userId);
+        return ResponseEntity.ok(likedComments);
+    }
 }

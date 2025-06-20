@@ -1,5 +1,9 @@
 package com.project.stock.investory.user.service;
 
+import com.project.stock.investory.comment.model.Comment;
+import com.project.stock.investory.comment.repository.CommentRepository;
+import com.project.stock.investory.commentLike.model.CommentLike;
+import com.project.stock.investory.commentLike.repository.CommentLikeRepository;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
 import com.project.stock.investory.post.repository.PostLikeRepository;
@@ -25,6 +29,8 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     // 회원가입 (일반 회원가입만 처리)
     @Transactional
@@ -189,6 +195,29 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
+    // 내가 작성한 댓글 목록 조회
+    @Transactional(readOnly = true)
+    public List<CommentSimpleResponseDto> getMyComments(Long userId) {
+        List<Comment> comments = commentRepository.findByUser_UserId(userId);
+
+        return comments.stream()
+                .map(comment -> CommentSimpleResponseDto.builder()
+                        .commentId(comment.getCommentId())
+                        .content(comment.getContent())
+                        .build())
+                .toList();
+    }
 
 
+    @Transactional(readOnly = true)
+    public List<CommentSimpleResponseDto> getMyLikedComments(Long userId) {
+        List<CommentLike> likes = commentLikeRepository.findByUser_UserId(userId);
+
+        return likes.stream()
+                .map(like -> CommentSimpleResponseDto.builder()
+                        .commentId(like.getComment().getCommentId())
+                        .content(like.getComment().getContent())
+                        .build())
+                .toList();
+    }
 }
