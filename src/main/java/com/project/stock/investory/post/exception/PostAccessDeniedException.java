@@ -1,5 +1,6 @@
 package com.project.stock.investory.post.exception;
 
+import com.project.stock.investory.exception.BusinessException;
 import org.springframework.http.HttpStatus;
 
 // 게시글 접근 권한 없음 예외
