@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -19,15 +20,16 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // 토큰 생성
-    public String generateToken(Long userId, String email) {
+    // 토큰 생성 (userId, email, name 포함)
+    public String generateToken(Long userId, String email, String name) {
         return Jwts.builder()
-                .setSubject(String.valueOf(userId))           // 사용자 ID
-                .claim("email", email)                        // 이메일 추가 정보
-                .setIssuedAt(new Date())                      // 발급 시간
+                .setSubject(String.valueOf(userId)) // 사용자 ID
+                .claim("email", email)              // 이메일 추가 정보
+                .claim("name", name)        // 이름 추가 정보
+                .setIssuedAt(new Date())            // 발급 시간
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS)) // 만료 시간
-                .signWith(key, SignatureAlgorithm.HS256)      // 키와 알고리즘으로 서명
-                .compact();                                   // JWT 문자열 반환
+                .signWith(key, SignatureAlgorithm.HS256) // 서명
+                .compact();
     }
 
     // 토큰 유효성 검증
@@ -43,14 +45,30 @@ public class JwtUtil {
         }
     }
 
-    // 토큰에서 사용자 ID 추출
+    // 토큰에서 userId 추출
     public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
+        Claims claims = parseClaims(token);
+        return Long.parseLong(claims.getSubject());
+    }
+
+    // 토큰에서 email 추출
+    public String getEmailFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("email", String.class);
+    }
+
+    // 토큰에서 name 추출
+    public String getNameFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("name", String.class);
+    }
+
+    // 내부 공통 Claims 파싱 메서드
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return Long.parseLong(claims.getSubject()); // userId는 subject(토큰의 주체)로 저장돼 있음
     }
 }
