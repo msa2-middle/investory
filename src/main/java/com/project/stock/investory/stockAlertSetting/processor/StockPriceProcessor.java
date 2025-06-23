@@ -33,7 +33,6 @@ public class StockPriceProcessor {
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
     private final StockAlertSettingRepository stockAlertSettingRepository;
-    private final StockAlertSetting stockAlertSetting;
 
     // 가격 이상 조건들 (목표가를 오름차순으로 정렬)
     private final Map<String, NavigableMap<Integer, List<AlertCondition>>> overMap = new ConcurrentHashMap<>();
@@ -224,12 +223,7 @@ public class StockPriceProcessor {
                     alarmService.createAlarm(alarmRequest, user.getUserId());
 
                     // DB 업데이트 (영구적으로 비활성화)
-                    cond.getSettingId();
-
-                    StockAlertSetting stockAlertSetting =
-                            stockAlertSettingRepository.findBy(cond.getSettingId())
-                                    .orElseThrow(() -> new EntityNotFoundException("해당 주가 알람 설정을 찾을 수 없습니다.");
-
+                    stockAlertSettingRepository.updateIsActiveFalseById(cond.getSettingId());
 
                     // 처리 완료 표시 (중복 방지)
                     processedAlerts.add(cond.getSettingId());
