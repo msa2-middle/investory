@@ -12,6 +12,7 @@ public interface StockAlertSettingRepository extends JpaRepository<StockAlertSet
 
     Optional<StockAlertSetting> findByUserUserIdAndStockStockId(Long userId, String stockId);
 
+    List<StockAlertSetting> findByIsActiveTrue();
 }
 
 

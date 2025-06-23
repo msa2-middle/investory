@@ -49,6 +49,9 @@ public class StockAlertSetting {
     @Column(nullable = false)
     private ConditionType condition;
 
+    @Column(nullable = false)
+    private Integer isActive;
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -59,6 +62,13 @@ public class StockAlertSetting {
         }
         this.targetPrice = targetPrice;
         this.condition = condition;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (isActive == null) {
+            isActive = 1;  // 기본값 1으로 셋팅 - true
+        }
     }
 
 }
