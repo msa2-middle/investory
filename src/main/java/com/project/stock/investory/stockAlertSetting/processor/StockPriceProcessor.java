@@ -222,8 +222,8 @@ public class StockPriceProcessor {
                     // 알람 보내기 실행
                     alarmService.createAlarm(alarmRequest, user.getUserId());
 
-                    // DB 업데이트 (영구적으로 비활성화)
-                    stockAlertSettingRepository.updateIsActiveFalseById(cond.getSettingId());
+                    // DB 업데이트 (영구적으로 비활성화) -> 오류 뜨는중
+//                    stockAlertSettingRepository.updateIsActiveFalseById(cond.getSettingId());
 
                     // 처리 완료 표시 (중복 방지)
                     processedAlerts.add(cond.getSettingId());
