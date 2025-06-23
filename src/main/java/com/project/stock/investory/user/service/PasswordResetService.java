@@ -31,7 +31,7 @@ public class PasswordResetService {
         verificationCodes = new ConcurrentHashMap<>();
     }
 
-    // 1️⃣ 이메일로 인증코드 전송 (임시로 콘솔에 출력)
+    // 1. 이메일로 인증코드 전송
     public void sendVerificationCode(VerificationEmailRequestDto request) {
         // 해당 이메일로 가입한 사용자가 있는지 확인
         User user = userRepository.findByEmail(request.getEmail())
@@ -58,7 +58,7 @@ public class PasswordResetService {
         );
     }
 
-    // 2️⃣ 인증코드 검증
+    // 2. 인증코드 검증
     public void verifyCode(VerifyCodeRequestDto request) {
         String storedCode = verificationCodes.get(request.getEmail());
 
@@ -70,7 +70,7 @@ public class PasswordResetService {
         verificationCodes.remove(request.getEmail());
     }
 
-    // 3️⃣ 비밀번호 재설정
+    // 3. 비밀번호 재설정
     public void resetPassword(PasswordResetRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(UserNotFoundException::new);

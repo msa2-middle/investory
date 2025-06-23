@@ -8,6 +8,7 @@ import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
 import com.project.stock.investory.post.repository.PostLikeRepository;
 import com.project.stock.investory.post.repository.PostRepository;
+import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.dto.*;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.exception.*;
@@ -70,10 +71,7 @@ public class UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(UserNotFoundException::new);
 
-        // 탈퇴한 사용자 접근 차단
-        if (user.getDeletedAt() != null) {
-            throw new UserWithdrawnException();
-        }
+        validateUserActive(user);
 
         // 소셜 회원인데 비밀번호가 없는 경우 → 일반 로그인 차단
         if (user.getPassword() == null || user.getIsSocial() == 1) {
@@ -86,7 +84,7 @@ public class UserService {
         }
 
         // 로그인 성공 → JWT 토큰 발급
-        String token = jwtUtil.generateToken(user.getUserId(), user.getEmail());
+        String token = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
 
         return UserLoginResponseDto.builder()
                 .userId(user.getUserId())
@@ -98,13 +96,8 @@ public class UserService {
 
     // 내 정보 조회 (마이페이지 조회)
     @Transactional(readOnly = true)
-    public UserResponseDto getMyInfo(Long userId) {
-        User user = validateUserExistsOrThrow(userId);
-
-        // 탈퇴한 사용자 접근 차단
-        if (user.getDeletedAt() != null) {
-            throw new UserWithdrawnException();
-        }
+    public UserResponseDto getMyInfo(CustomUserDetails userDetails) {
+        User user = findActiveUser(userDetails.getUserId());
 
         return UserResponseDto.builder()
                 .userId(user.getUserId())
@@ -115,8 +108,8 @@ public class UserService {
 
     // 내 정보 수정 (마이페이지 수정)
     @Transactional
-    public UserResponseDto updateUser(Long userId, UserUpdateRequestDto request) {
-        User user = validateUserExistsOrThrow(userId);
+    public UserResponseDto updateUser(CustomUserDetails userDetails, UserUpdateRequestDto request) {
+        User user = findActiveUser(userDetails.getUserId());
 
         // null 방어: 전화번호가 null로 넘어오면 기존 전화번호 유지
         String phoneToUpdate = request.getPhone() != null ? request.getPhone() : user.getPhone();
@@ -132,8 +125,8 @@ public class UserService {
 
     // 비밀번호 변경 (마이페이지에서 변경)
     @Transactional
-    public void updatePassword(Long userId, PasswordUpdateRequestDto request) {
-        User user = validateUserExistsOrThrow(userId);
+    public void updatePassword(CustomUserDetails userDetails, PasswordUpdateRequestDto request) {
+        User user = findActiveUser(userDetails.getUserId());
 
         // 소셜 로그인 사용자는 비밀번호 변경 불가
         if (user.getIsSocial() == 1 || user.getPassword() == null) {
@@ -152,8 +145,8 @@ public class UserService {
 
     // 회원 탈퇴 (soft delete)
     @Transactional
-    public void withdraw(Long userId) {
-        User user = validateUserExistsOrThrow(userId);
+    public void withdraw(CustomUserDetails userDetails) {
+        User user = findActiveUser(userDetails.getUserId());
 
         // 이미 탈퇴한 사용자인 경우 예외 처리
         if (user.getDeletedAt() != null) {
@@ -165,8 +158,8 @@ public class UserService {
 
     // 내가 작성한 게시글 목록 조회
     @Transactional(readOnly = true)
-    public List<PostSimpleResponseDto> getMyPosts(Long userId) {
-        List<Post> posts = postRepository.findByUserId(userId);
+    public List<PostSimpleResponseDto> getMyPosts(CustomUserDetails userDetails) {
+        List<Post> posts = postRepository.findByUserId(userDetails.getUserId());
 
         return posts.stream()
                 .map(post -> PostSimpleResponseDto.builder()
@@ -178,8 +171,8 @@ public class UserService {
 
     // 내가 좋아요한 게시글 목록 조회
     @Transactional(readOnly = true)
-    public List<PostSimpleResponseDto> getMyLikedPosts(Long userId) {
-        List<PostLike> likes = postLikeRepository.findByUser_UserId(userId);
+    public List<PostSimpleResponseDto> getMyLikedPosts(CustomUserDetails userDetails) {
+        List<PostLike> likes = postLikeRepository.findByUser_UserId(userDetails.getUserId());
 
         return likes.stream()
                 .map(like -> PostSimpleResponseDto.builder()
@@ -189,16 +182,10 @@ public class UserService {
                 .toList();
     }
 
-    // 공통 사용자 조회 유틸리티 메서드
-    private User validateUserExistsOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
-    }
-
     // 내가 작성한 댓글 목록 조회
     @Transactional(readOnly = true)
-    public List<CommentSimpleResponseDto> getMyComments(Long userId) {
-        List<Comment> comments = commentRepository.findByUser_UserId(userId);
+    public List<CommentSimpleResponseDto> getMyComments(CustomUserDetails userDetails) {
+        List<Comment> comments = commentRepository.findByUser_UserId(userDetails.getUserId());
 
         return comments.stream()
                 .map(comment -> CommentSimpleResponseDto.builder()
@@ -208,10 +195,10 @@ public class UserService {
                 .toList();
     }
 
-
+    // 내가 좋아요한 댓글 조회
     @Transactional(readOnly = true)
-    public List<CommentSimpleResponseDto> getMyLikedComments(Long userId) {
-        List<CommentLike> likes = commentLikeRepository.findByUser_UserId(userId);
+    public List<CommentSimpleResponseDto> getMyLikedComments(CustomUserDetails userDetails) {
+        List<CommentLike> likes = commentLikeRepository.findByUser_UserId(userDetails.getUserId());
 
         return likes.stream()
                 .map(like -> CommentSimpleResponseDto.builder()
@@ -219,5 +206,20 @@ public class UserService {
                         .content(like.getComment().getContent())
                         .build())
                 .toList();
+    }
+
+    // ====== 내부 유틸 메서드 ======
+
+    private User findActiveUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        validateUserActive(user);
+        return user;
+    }
+
+    private void validateUserActive(User user) {
+        if (user.getDeletedAt() != null) {
+            throw new UserWithdrawnException();
+        }
     }
 }
