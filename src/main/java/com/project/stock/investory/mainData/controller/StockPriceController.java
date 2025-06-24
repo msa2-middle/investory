@@ -17,10 +17,10 @@ public class StockPriceController {
     }
 
     @GetMapping("/stock/{iscd}/price")
-    public Mono<StockPriceDto> getPrice(@PathVariable String iscd, Model model) {
+    public StockPriceDto getPrice(@PathVariable String iscd, Model model) {
         Mono<StockPriceDto> response = stockPriceService.getStockPrice(iscd);
 
-        return response;
+        return response.block();
     }
 
 }
