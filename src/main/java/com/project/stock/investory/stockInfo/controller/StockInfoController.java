@@ -7,14 +7,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.project.stock.investory.stockInfo.dto.*;
 import com.project.stock.investory.stockInfo.service.StockInfoService;
 
 import java.util.List;
 
 
 @RestController
-@RequestMapping("/stock/{mkscShrnIscd}/analytics")
+@RequestMapping("/stock/{stockId}/analytics")
 public class StockInfoController {
     private StockInfoService stockInfoService ;
 
@@ -25,52 +24,52 @@ public class StockInfoController {
 
 
     @GetMapping("/productInfo")
-    public ResponseEntity<ProductBasicDTO> getProductInfo(@PathVariable String mkscShrnIscd) {
+    public ResponseEntity<ProductBasicDTO> getProductInfo(@PathVariable String stockId) {
 
-       ProductBasicDTO dto = stockInfoService.getProductBasic(mkscShrnIscd);
+       ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/stock-info")
-    public ResponseEntity<StockBasicDTO> getStockInfo(@PathVariable String mkscShrnIscd) {
-        StockBasicDTO dto = stockInfoService.getStockBasic(mkscShrnIscd);
+    public ResponseEntity<StockBasicDTO> getStockInfo(@PathVariable String stockId) {
+        StockBasicDTO dto = stockInfoService.getStockBasic(stockId);
         return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/balance-sheet")
-    public ResponseEntity<List<BalanceSheetDTO>> getBalanceSheet(@PathVariable String mkscShrnIscd) {
-        List<BalanceSheetDTO> dtoList = stockInfoService.getBalanceSheet(mkscShrnIscd);
+    public ResponseEntity<List<BalanceSheetDTO>> getBalanceSheet(@PathVariable String stockId) {
+        List<BalanceSheetDTO> dtoList = stockInfoService.getBalanceSheet(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
     @GetMapping("/income-statement")
-    public ResponseEntity<List<IncomeStatementDTO>> getIncomeStatement(@PathVariable String mkscShrnIscd) {
-        List<IncomeStatementDTO> dtoList = stockInfoService.getIncomeStatement(mkscShrnIscd);
+    public ResponseEntity<List<IncomeStatementDTO>> getIncomeStatement(@PathVariable String stockId) {
+        List<IncomeStatementDTO> dtoList = stockInfoService.getIncomeStatement(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
     @GetMapping("/financial-ratio")
-    public ResponseEntity<List<FinancialRatioDTO>> getFinancialRatio(@PathVariable String mkscShrnIscd) {
-        List<FinancialRatioDTO> dtoList = stockInfoService.getFinancialRatio(mkscShrnIscd);
+    public ResponseEntity<List<FinancialRatioDTO>> getFinancialRatio(@PathVariable String stockId) {
+        List<FinancialRatioDTO> dtoList = stockInfoService.getFinancialRatio(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
 
     @GetMapping("/profitability-ratio")
-    public ResponseEntity<List<ProfitRatioDTO>> getProfitRatio(@PathVariable String mkscShrnIscd) {
-        List<ProfitRatioDTO> dtoList = stockInfoService.getProfitRatio(mkscShrnIscd);
+    public ResponseEntity<List<ProfitRatioDTO>> getProfitRatio(@PathVariable String stockId) {
+        List<ProfitRatioDTO> dtoList = stockInfoService.getProfitRatio(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
     @GetMapping("/stability-ratio")
-    public ResponseEntity<List<StabilityRatioDTO>> getStabilityRatio(@PathVariable String mkscShrnIscd) {
-        List<StabilityRatioDTO> dtoList = stockInfoService.getStabilityRatio(mkscShrnIscd);
+    public ResponseEntity<List<StabilityRatioDTO>> getStabilityRatio(@PathVariable String stockId) {
+        List<StabilityRatioDTO> dtoList = stockInfoService.getStabilityRatio(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
     @GetMapping("/growth-ratio")
-    public ResponseEntity<List<GrowthRatioDTO>> getGrowthRatio(@PathVariable String mkscShrnIscd) {
-        List<GrowthRatioDTO> dtoList = stockInfoService.getGrowthRatio(mkscShrnIscd);
+    public ResponseEntity<List<GrowthRatioDTO>> getGrowthRatio(@PathVariable String stockId) {
+        List<GrowthRatioDTO> dtoList = stockInfoService.getGrowthRatio(stockId);
         return ResponseEntity.ok(dtoList);
     }
 
