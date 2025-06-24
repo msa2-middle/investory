@@ -3,10 +3,11 @@ package com.project.stock.investory.post.controller;
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
 import com.project.stock.investory.post.service.PostService;
+import com.project.stock.investory.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,10 +26,9 @@ public class PostController {
     @Operation(summary = "게시글 생성")
     @PostMapping("/stock/{stockId}/community")
     public ResponseEntity<PostDto> createPost(@PathVariable String stockId,
-                                              @RequestBody PostRequestDto request) {
-//                                              @AuthenticationPrincipal CustomUserDetails userDetails) {
-//        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                                              @RequestBody PostRequestDto request,
+                                              @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         PostDto post = postService.createPost(stockId, request, userId);
         return ResponseEntity.ok(post);
     }
@@ -53,10 +53,9 @@ public class PostController {
     @Operation(summary = "게시글 수정 ")
     @PatchMapping("/community/posts/{postId}")
     public ResponseEntity<PostDto> updatePost(@PathVariable Long postId,
-                                              @RequestBody PostRequestDto request) {
-//                                              , @AuthenticationPrincipal CustomUserDetails userDetails) {
-//        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                                              @RequestBody PostRequestDto request,
+                                              @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         PostDto post = postService.updatePost(postId, request, userId);
         return ResponseEntity.ok(post);
     }
@@ -64,10 +63,9 @@ public class PostController {
     // 게시글 삭제
     @Operation(summary = "게시글 삭제")
     @DeleteMapping("/community/posts/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
-//                                           , @AuthenticationPrincipal CustomUserDetails userDetails) {
-//        Long userId = userDetails.getId();  // 현재 로그인한 유저의 id
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public ResponseEntity<Void> deletePost(@PathVariable Long postId,
+                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         postService.deletePost(postId, userId);
         return ResponseEntity.noContent().build();
     }
