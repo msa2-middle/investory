@@ -4,6 +4,7 @@ import com.project.stock.investory.comment.model.Comment;
 import com.project.stock.investory.comment.repository.CommentRepository;
 import com.project.stock.investory.commentLike.model.CommentLike;
 import com.project.stock.investory.commentLike.repository.CommentLikeRepository;
+import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -24,15 +25,16 @@ public class CommentLikeService {
 
     // 댓글 좋아요 설정
     @Transactional
-    public void addCommentLike(Long userId, Long commentId) {
+    public void addCommentLike(CustomUserDetails userDetails, Long commentId) {
 
         Comment comment = commentRepository.findByCommentId(commentId)
                 .orElseThrow(() -> new EntityNotFoundException());
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException());
 
-        Optional<CommentLike> commentLike = commentLikeRepository.findByUserUserIdAndCommentCommentId(userId, commentId);
+        Optional<CommentLike> commentLike =
+                commentLikeRepository.findByUserUserIdAndCommentCommentId(user.getUserId(), comment.getCommentId());
 
 
         if (commentLike.isPresent()) {

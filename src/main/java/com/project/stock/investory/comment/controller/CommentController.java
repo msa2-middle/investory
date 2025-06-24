@@ -3,9 +3,11 @@ package com.project.stock.investory.comment.controller;
 import com.project.stock.investory.comment.dto.CommentRequestDTO;
 import com.project.stock.investory.comment.dto.CommentResponseDTO;
 import com.project.stock.investory.comment.service.CommentService;
+import com.project.stock.investory.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +24,11 @@ public class CommentController {
     @PostMapping("/")
     public ResponseEntity<CommentResponseDTO> create(
             @RequestBody CommentRequestDTO request,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long postId
     ) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        CommentResponseDTO response = commentService.create(request, userId, postId);
+        CommentResponseDTO response = commentService.create(request, userDetails, postId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -56,27 +58,27 @@ public class CommentController {
     // 댓글 수정
     @PutMapping("/{commentId}")
     public ResponseEntity<CommentResponseDTO> updateComment(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long postId,
             @PathVariable Long commentId,
             @RequestBody CommentRequestDTO request
     ) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         CommentResponseDTO response =
-                commentService.updateComment(userId, postId, commentId, request);
+                commentService.updateComment(userDetails, postId, commentId, request);
         return ResponseEntity.ok(response);
     }
 
     // 댓글 삭제
     @DeleteMapping("/{commentId}")
     public ResponseEntity<CommentResponseDTO> deleteComment(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long postId,
             @PathVariable Long commentId
     ) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         CommentResponseDTO response =
-                commentService.deleteComment(userId, postId, commentId);
+                commentService.deleteComment(userDetails, postId, commentId);
         return ResponseEntity.ok(response);
     }
 

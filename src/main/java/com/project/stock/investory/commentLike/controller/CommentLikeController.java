@@ -1,7 +1,9 @@
 package com.project.stock.investory.commentLike.controller;
 
 import com.project.stock.investory.commentLike.service.CommentLikeService;
+import com.project.stock.investory.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,11 +20,11 @@ public class CommentLikeController {
 
     // 댓글 좋아요 설정
     @PostMapping("/")
-    public void addCommentLike(@PathVariable Long commentId) {
+    public void addCommentLike(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long commentId) {
 
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        commentLikeService.addCommentLike(userId, commentId);
+        commentLikeService.addCommentLike(userDetails, commentId);
 
     }
 
