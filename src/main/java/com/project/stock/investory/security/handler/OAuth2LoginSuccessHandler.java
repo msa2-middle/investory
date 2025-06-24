@@ -30,8 +30,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("로그인 사용자를 찾을 수 없습니다."));
 
-        // JWT 토큰 발급
-        String accessToken = jwtUtil.generateToken(user.getUserId(), user.getEmail());
+        // JWT 토큰 발급 (userId, email, name)
+        String accessToken = jwtUtil.generateToken(
+                user.getUserId(),
+                user.getEmail(),
+                user.getName()
+        );
 
         // 소셜 로그인 성공 후 프론트엔드로 토큰 전달
         // TODO: 배포 시 프론트엔드 URL로 수정 필요
