@@ -6,6 +6,9 @@ import com.project.stock.investory.mainData.dto.RankDto;
 import com.project.stock.investory.stockInfo.dto.StockApiResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -73,6 +76,57 @@ public class RankService {
         }
     }
 
+    // 페이지네이션 적용된 데이터 반환
+    public Mono<Page<RankDto>> getRankDataWithPagination(String option, Pageable pageable) {
+        HttpHeaders headers = createRankHttpHeaders();
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/uapi/domestic-stock/v1/ranking/fluctuation")
+                        .queryParam("user_id", "jjgus29")
+                        .queryParam("seq", option)
+                        // KIS API는 page/size 무시하므로 제거
+                        .build())
+                .headers(httpHeaders -> httpHeaders.addAll(headers))
+                .retrieve()
+                .bodyToMono(String.class)
+                .flatMap(response -> {
+                    try {
+                        JsonNode rootNode = objectMapper.readTree(response);
+                        JsonNode outputNode = rootNode.get("output2");
+
+                        List<RankDto> content = new ArrayList<>();
+                        if (outputNode != null && outputNode.isArray()) {
+                            for (JsonNode node : outputNode) {
+                                RankDto dto = objectMapper.treeToValue(node, RankDto.class);
+                                content.add(dto);
+                            }
+                        }
+
+                        // 전체 데이터 수
+                        int total = content.size();
+
+                        // 페이지네이션 (메모리 내에서 직접 자르기)
+                        int start = (int) pageable.getOffset();
+                        int end = Math.min(start + pageable.getPageSize(), total);
+
+                        List<RankDto> pagedContent = new ArrayList<>();
+                        if (start <= end) { // 범위 체크
+                            pagedContent = content.subList(start, end);
+                        }
+
+                        Page<RankDto> page = new PageImpl<>(pagedContent, pageable, total);
+                        return Mono.just(page);
+
+                    } catch (Exception e) {
+                        return Mono.error(new RuntimeException("Rank 데이터 파싱 실패", e));
+                    }
+                });
+    }
+
+
+    /**
+     * DB저장용 코드
+     */
     // get data
     public Mono<List<RankDto>> getRankData(String option) {
 
@@ -89,7 +143,6 @@ public class RankService {
                 .bodyToMono(String.class)
                 .flatMap(this::parseRankData);
     }
-
 
     // 디비에 저장하기 위해 필요 (StockApiResponseDTO로 변환하기 위해)
     public Mono<List<StockApiResponseDTO>> getStockIdAndNameOnly(String option) {
