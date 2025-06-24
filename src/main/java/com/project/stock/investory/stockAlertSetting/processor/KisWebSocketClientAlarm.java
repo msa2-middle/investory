@@ -2,6 +2,7 @@ package com.project.stock.investory.stockAlertSetting.processor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.stock.investory.stockInfo.repository.StockRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.websocket.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class KisWebSocketClientAlarm {
 
     private final StockPriceProcessor stockPriceProcessor;
+    private final StockRepository stockRepository;
 
     // application.properties에서 주입
     @Value("${koreainvest.approval-key}")
@@ -45,20 +48,24 @@ public class KisWebSocketClientAlarm {
         System.out.println("[OPEN] 연결됨");
 
         // todo: String code = 설정하기 db에서 가져오기
+        // DB에서 종목코드 가져오기
+        List<String> stockCodes = stockRepository.findAllStockCodes();
+//        List<String> stockCodes = List.of("005930", "000660", "035420");  // 삼성전자, SK하이닉스, NAVER
 
         // 승인 요청
         // todo: approvalJson() 안에다가 code 넣어주기
         session.getAsyncRemote().sendText(approvalJson());
 
-        // 구독 요청을 더 빨리 전송 (1초 후)
+        // 1초 후 종목별로 subscribe 전송
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            if (this.session != null && this.session.isOpen()) {
-                // todo: 여기에다가 "005930" 대신 code 넣기
-                String subscribeMsg = subscribeJson("005930");
-                this.session.getAsyncRemote().sendText(subscribeMsg);
-                System.out.println("[SUBSCRIBE] 구독 요청 전송: " + subscribeMsg);
-            } else {
-                System.out.println("[WARN] 세션이 닫혀 있어 subscribe 실패");
+            for (String code : stockCodes) {
+                if (this.session != null && this.session.isOpen()) {
+                    String subscribeMsg = subscribeJson(code);
+                    this.session.getAsyncRemote().sendText(subscribeMsg);
+                    System.out.println("[SUBSCRIBE] 구독 요청 전송: " + subscribeMsg);
+                } else {
+                    System.out.println("[WARN] 세션이 닫혀 있어 subscribe 실패");
+                }
             }
         }, 1, TimeUnit.SECONDS);
 

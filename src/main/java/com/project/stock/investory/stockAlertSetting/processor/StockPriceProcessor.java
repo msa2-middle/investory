@@ -53,13 +53,13 @@ public class StockPriceProcessor {
         log.info("StockPriceProcessor 초기화 완료");
     }
 
-    // 주기적으로 새로운 알람 설정을 로드 (5분마다)
-    @Scheduled(fixedRate = 600000)
-    public void refreshConditions() {
-        log.info("알람 조건 새로고침 시작");
-        loadAllConditions();
-        refreshCaches();
-    }
+//    // 주기적으로 새로운 알람 설정을 로드 (5분마다)
+//    @Scheduled(fixedRate = 600000)
+//    public void refreshConditions() {
+//        log.info("알람 조건 새로고침 시작");
+//        loadAllConditions();
+//        refreshCaches();
+//    }
 
     private void loadAllConditions() {
         try {
@@ -222,8 +222,18 @@ public class StockPriceProcessor {
                     // 알람 보내기 실행
                     alarmService.createAlarm(alarmRequest, user.getUserId());
 
-                    // DB 업데이트 (영구적으로 비활성화) -> 오류 뜨는중
-//                    stockAlertSettingRepository.updateIsActiveFalseById(cond.getSettingId());
+//                    // DB 업데이트 (영구적으로 비활성화)
+//                    StockAlertSetting stockAlertSetting =
+//                            stockAlertSettingRepository.findById(cond.getSettingId())
+//                                    .orElseThrow(() -> new EntityNotFoundException());
+//
+//                    stockAlertSetting =
+//                            StockAlertSetting
+//                                    .builder()
+//                                    .isActive(0)
+//                                    .build();
+//
+//                    stockAlertSettingRepository.save(stockAlertSetting);
 
                     // 처리 완료 표시 (중복 방지)
                     processedAlerts.add(cond.getSettingId());
