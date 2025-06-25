@@ -64,6 +64,20 @@ public class StockAlertSetting {
         this.condition = condition;
     }
 
+    public void updateTargetPrice(int targetPrice) {
+        if (targetPrice <= 0) {
+            throw new IllegalArgumentException("유효하지 않은 목표가입니다.");
+        }
+        this.targetPrice = targetPrice;
+    }
+
+    public void updateCondition(ConditionType condition) {
+        if (condition == null) {
+            throw new IllegalArgumentException("조건은 null일 수 없습니다.");
+        }
+        this.condition = condition;
+    }
+
     @PrePersist
     public void prePersist() {
         if (isActive == null) {

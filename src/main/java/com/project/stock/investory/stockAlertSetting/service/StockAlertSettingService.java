@@ -116,10 +116,19 @@ public class StockAlertSettingService {
                 .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         // 엔티티 내부 메서드로 상태 변경 (유효성 검증 포함)
-        setting.updateSetting(request.getTargetPrice(), request.getCondition());
+        // null이 아닌 필드만 업데이트 => updateDTO에서 int를 Integer로 변경
+        if (request.getTargetPrice() != null) {
+            setting.updateTargetPrice(request.getTargetPrice());
+        }
 
+        if (request.getCondition() != null) {
+            setting.updateCondition(request.getCondition());
+        }
+
+        // 저장
         stockAlertSettingRepository.save(setting);
 
+        // 업데이트 시 StockPriceProcessor 캐시 부분 업데이트
         stockPriceProcessor.updateStockAlertCondition(setting);
 
         return StockAlertSettingResponseDTO.builder()
