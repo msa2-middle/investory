@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
+import java.net.URLEncoder;
 
 @Component
 @RequiredArgsConstructor
@@ -38,7 +39,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         );
 
         // 소셜 로그인 성공 후 프론트엔드로 토큰 전달
-        // TODO: 배포 시 프론트엔드 URL로 수정 필요
-        response.sendRedirect("http://localhost:3000/oauth-success?token=" + accessToken);
+        response.sendRedirect("http://localhost:5173/oauth-success?token=" + accessToken+ "&name=" + URLEncoder.encode(user.getName(), "UTF-8"));
     }
 }

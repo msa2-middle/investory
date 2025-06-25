@@ -7,6 +7,7 @@ import com.project.stock.investory.user.exception.EmailVerificationException;
 import com.project.stock.investory.user.exception.UserNotFoundException;
 import com.project.stock.investory.user.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PasswordResetService {
 
     private final UserRepository userRepository;
