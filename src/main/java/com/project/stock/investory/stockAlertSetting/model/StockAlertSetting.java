@@ -71,4 +71,8 @@ public class StockAlertSetting {
         }
     }
 
+    public void updateIsActive() {
+        this.isActive = 0;
+    }
+
 }

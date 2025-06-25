@@ -81,8 +81,6 @@ public class StockPriceProcessor {
 
     public void loadConditions(List<StockAlertSetting> settings) {
 
-        log.info("총 {}개의 활성 알람 조건 로드됨 여기는 내가 만든 로그", settings.size());
-
         for (StockAlertSetting setting : settings) {
             try {
                 AlertCondition condition = new AlertCondition(
@@ -155,8 +153,6 @@ public class StockPriceProcessor {
             // 현재가 이하의 모든 목표가들을 가져옴 (즉, 조건을 만족하는 것들)
             SortedMap<Integer, List<AlertCondition>> matched = overConditions.headMap(currentPrice, true);
 
-            log.debug("=====================주식  현재가={}", currentPrice);
-
             notifyAndRemove(matched, stockCode, currentPrice, "이상");
         }
 
@@ -222,18 +218,15 @@ public class StockPriceProcessor {
                     // 알람 보내기 실행
                     alarmService.createAlarm(alarmRequest, user.getUserId());
 
-//                    // DB 업데이트 (영구적으로 비활성화)
-//                    StockAlertSetting stockAlertSetting =
-//                            stockAlertSettingRepository.findById(cond.getSettingId())
-//                                    .orElseThrow(() -> new EntityNotFoundException());
-//
-//                    stockAlertSetting =
-//                            StockAlertSetting
-//                                    .builder()
-//                                    .isActive(0)
-//                                    .build();
-//
-//                    stockAlertSettingRepository.save(stockAlertSetting);
+                    // DB 업데이트 (영구적으로 비활성화)
+                    StockAlertSetting stockAlertSetting =
+                            stockAlertSettingRepository.findById(cond.getSettingId())
+                                    .orElseThrow(() -> new EntityNotFoundException());
+
+                    // is_active 0으로 처리 후 저장
+                    stockAlertSetting.updateIsActive();
+
+                    stockAlertSettingRepository.save(stockAlertSetting);
 
                     // 처리 완료 표시 (중복 방지)
                     processedAlerts.add(cond.getSettingId());
