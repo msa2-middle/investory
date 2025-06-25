@@ -6,6 +6,7 @@ import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingCreate
 import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingResponseDTO;
 import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingUpdateRequestDTO;
 import com.project.stock.investory.stockAlertSetting.model.StockAlertSetting;
+import com.project.stock.investory.stockAlertSetting.processor.StockPriceProcessor;
 import com.project.stock.investory.stockAlertSetting.repository.StockAlertSettingRepository;
 import com.project.stock.investory.stockInfo.model.Stock;
 import com.project.stock.investory.stockInfo.repository.StockRepository;
@@ -28,6 +29,7 @@ public class StockAlertSettingService {
     private final StockAlertSettingRepository stockAlertSettingRepository;
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
+    private final StockPriceProcessor stockPriceProcessor;
 
     // 주가 알람 설정 생성
     public StockAlertSettingResponseDTO create(String stockId, StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
@@ -117,6 +119,8 @@ public class StockAlertSettingService {
         setting.updateSetting(request.getTargetPrice(), request.getCondition());
 
         stockAlertSettingRepository.save(setting);
+
+        stockPriceProcessor.updateStockAlertCondition(setting);
 
         return StockAlertSettingResponseDTO.builder()
                 .userId(setting.getUser().getUserId())
