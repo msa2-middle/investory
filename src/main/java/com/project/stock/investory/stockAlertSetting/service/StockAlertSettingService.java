@@ -30,15 +30,15 @@ public class StockAlertSettingService {
     private final StockRepository stockRepository;
 
     // 주가 알람 설정 생성
-    public StockAlertSettingResponseDTO create(StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
+    public StockAlertSettingResponseDTO create(String stockId, StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
         User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
-        Stock stock = stockRepository.findById(request.getStockId())
+        Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         Optional<StockAlertSetting> existedSetting =
-                stockAlertSettingRepository.findByUserUserIdAndStockStockId(userDetails.getUserId(), request.getStockId());
+                stockAlertSettingRepository.findByUserUserIdAndStockStockId(userDetails.getUserId(), stockId);
 
         // todo: 이걸로 중복 방지가 안되네요 해야할 일
         if (existedSetting.isPresent()) {

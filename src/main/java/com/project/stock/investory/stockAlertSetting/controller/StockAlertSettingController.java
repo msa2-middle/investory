@@ -23,12 +23,13 @@ public class StockAlertSettingController {
     private final StockAlertSettingService stockAlertSettingService;
 
     // 주가 알람 설정 생성
-    @PostMapping("/")
+    @PostMapping("/stocks/{stockId}")
     public ResponseEntity<StockAlertSettingResponseDTO> create(
+            @PathVariable String stockId,
             @RequestBody StockAlertSettingCreateRequestDTO request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        StockAlertSettingResponseDTO response = stockAlertSettingService.create(request, userDetails);
+        StockAlertSettingResponseDTO response = stockAlertSettingService.create(stockId, request, userDetails);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
