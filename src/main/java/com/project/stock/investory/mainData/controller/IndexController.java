@@ -21,21 +21,21 @@ public class IndexController {
      * Mono<List<T>>를 반환하면 Spring WebFlux가 자동으로 200 OK로 응답
      */
     @GetMapping("/kospi")
-    public Mono<List<IndexDto>> getKospi() {
+    public List<IndexDto> getKospi() {
         String option = "0001";
-        return indexService.getIndexData(option);
+        return indexService.getIndexData(option).block();
     }
 
     @GetMapping("/kosdaq")
-    public Mono<List<IndexDto>> getKosdaq() {
+    public List<IndexDto> getKosdaq() {
         String option = "1001";
-        return indexService.getIndexData(option);
+        return indexService.getIndexData(option).block();
     }
 
     @GetMapping("/kospi200")
-    public Mono<List<IndexDto>> getKospi200() {
+    public List<IndexDto> getKospi200() {
         String option = "2001";
-        return indexService.getIndexData(option);
+        return indexService.getIndexData(option).block();
     }
 
 }

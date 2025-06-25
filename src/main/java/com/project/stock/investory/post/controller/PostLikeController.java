@@ -1,9 +1,10 @@
 package com.project.stock.investory.post.controller;
 
 import com.project.stock.investory.post.service.PostLikeService;
+import com.project.stock.investory.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,8 +21,9 @@ public class PostLikeController {
     // 게시글 좋아요
     @Operation(summary = "게시글 좋아요", description = "새 게시글 좋아요 등록.")
     @PostMapping("/{postId}/likes")
-    public ResponseEntity<Void> likePost(@PathVariable Long postId) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public ResponseEntity<Void> likePost(@PathVariable Long postId,
+                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         postLikeService.likePost(userId, postId);
         return ResponseEntity.ok().build();
     }
@@ -29,8 +31,9 @@ public class PostLikeController {
     // 게시글 좋아요 취소
     @Operation(summary = "게시글 좋아요 취소", description = "게시글 좋아요 취소")
     @DeleteMapping("/{postId}/likes")
-    public ResponseEntity<Void> unlikePost(@PathVariable Long postId) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public ResponseEntity<Void> unlikePost(@PathVariable Long postId,
+                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         postLikeService.unlikePost(userId, postId);
         return ResponseEntity.ok().build();
     }
@@ -46,8 +49,9 @@ public class PostLikeController {
     // 특정 유저가 해당 게시글에 좋아요를 눌렀는지 확인
     @Operation(summary = "특정 유저가 해당 게시글에 좋아요를 눌렀는지 확인")
     @GetMapping("/{postId}/likes/check")
-    public ResponseEntity<Boolean> hasUserLiked(@PathVariable Long postId) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public ResponseEntity<Boolean> hasUserLiked(@PathVariable Long postId,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
         boolean liked = postLikeService.hasUserLiked(userId, postId);
         return ResponseEntity.ok(liked);
     }

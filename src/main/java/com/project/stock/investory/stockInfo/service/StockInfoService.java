@@ -41,12 +41,12 @@ public class StockInfoService {
         return getHttpHeaders("CTPF1604R");
     }
 
-    public ProductBasicDTO getProductBasic(String mkscShrnIscd) {
+    public ProductBasicDTO getProductBasic(String stockId) {
         HttpHeaders headers = createProductBasicHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/quotations/search-info")
-                        .queryParam("PDNO", mkscShrnIscd)
+                        .queryParam("PDNO", stockId)
                         .queryParam("PRDT_TYPE_CD", 300)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -54,10 +54,10 @@ public class StockInfoService {
                 .bodyToMono(String.class)
                 .block(); //동기처리
 
-        return parseFProductBasic(response, mkscShrnIscd);
+        return parseFProductBasic(response, stockId);
     }
 
-    private ProductBasicDTO parseFProductBasic(String response, String mkscShrnIscd) {
+    private ProductBasicDTO parseFProductBasic(String response, String stockId) {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output");
@@ -66,7 +66,7 @@ public class StockInfoService {
 
 
             ProductBasicDTO dto = new ProductBasicDTO();
-            dto.setPdno(mkscShrnIscd);
+            dto.setPdno(stockId);
             dto.setPrdtName(outputNode.get("prdt_name").asText());
             dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
             dto.setPrdtAbrvName(outputNode.get("prdt_abrv_name").asText());
@@ -89,23 +89,23 @@ public class StockInfoService {
         return getHttpHeaders("CTPF1002R");
     }
 
-    public StockBasicDTO getStockBasic(String mkscShrnIscd) {
+    public StockBasicDTO getStockBasic(String stockId) {
         HttpHeaders headers = createStockBasicHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/quotations/search-stock-info")
-                        .queryParam("PDNO", mkscShrnIscd)
+                        .queryParam("PDNO", stockId)
                         .queryParam("PRDT_TYPE_CD", 300)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
-        return parseFStockBasic(response, mkscShrnIscd);
+        return parseFStockBasic(response, stockId);
 
     }
 
-    private StockBasicDTO parseFStockBasic(String response, String mkscShrnIscd) {
+    private StockBasicDTO parseFStockBasic(String response, String stockId) {
         try {
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output");
@@ -114,7 +114,7 @@ public class StockInfoService {
 
 
             StockBasicDTO dto = new StockBasicDTO();
-            dto.setPdno(mkscShrnIscd);
+            dto.setPdno(stockId);
             dto.setPrdtName(outputNode.get("prdt_name").asText());
             dto.setPrdtEngName(outputNode.get("prdt_eng_name").asText());
             dto.setMketIdCd(outputNode.get("mket_id_cd").asText());
@@ -143,13 +143,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430100");
     }
 
-    public List<BalanceSheetDTO> getBalanceSheet(String mkscShrnIscd) {
+    public List<BalanceSheetDTO> getBalanceSheet(String stockId) {
         HttpHeaders headers = createBalanceSheetHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/balance-sheet")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_div_cls_code", "1") //  (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -194,13 +194,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430200");
     }
 
-    public List<IncomeStatementDTO> getIncomeStatement(String mkscShrnIscd) {
+    public List<IncomeStatementDTO> getIncomeStatement(String stockId) {
         HttpHeaders headers = createIncomeStatementHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/income-statement")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_div_cls_code", 1) // 분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -248,13 +248,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430300");
     }
 
-    public List<FinancialRatioDTO> getFinancialRatio(String mkscShrnIscd) {
+    public List<FinancialRatioDTO> getFinancialRatio(String stockId) {
         HttpHeaders headers = createFinancialRatioHttpHeaders();
 
         String response= webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/financial-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -297,13 +297,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430400");
     }
 
-    public List<ProfitRatioDTO> getProfitRatio(String mkscShrnIscd) {
+    public List<ProfitRatioDTO> getProfitRatio(String stockId) {
         HttpHeaders headers = createProfitRatioHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/profit-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -342,13 +342,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430600");
     }
 
-    public List<StabilityRatioDTO> getStabilityRatio(String mkscShrnIscd) {
+    public List<StabilityRatioDTO> getStabilityRatio(String stcokId) {
         HttpHeaders headers = createStabilityRatioHttpHeaders();
 
         String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("uapi/domestic-stock/v1/finance/stability-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stcokId)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -386,13 +386,13 @@ public class StockInfoService {
         return getHttpHeaders("FHKST66430800");
     }
 
-    public List<GrowthRatioDTO> getGrowthRatio(String mkscShrnIscd) {
+    public List<GrowthRatioDTO> getGrowthRatio(String stockId) {
         HttpHeaders headers = createGrowthRatioHttpHeaders();
 
         String response= webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/uapi/domestic-stock/v1/finance/growth-ratio")
                         .queryParam("fid_cond_mrkt_div_code", "J")
-                        .queryParam("fid_input_iscd", mkscShrnIscd)
+                        .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_div_cls_code", "1") //분류 구분 코드 (0:연말, 1:분기)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
