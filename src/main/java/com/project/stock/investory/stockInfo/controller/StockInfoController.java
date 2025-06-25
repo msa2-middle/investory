@@ -1,6 +1,9 @@
 package com.project.stock.investory.stockInfo.controller;
 
 import com.project.stock.investory.stockInfo.dto.*;
+import com.project.stock.investory.stockInfo.service.StockWebSocketService;
+import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,20 +17,29 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/stock/{stockId}/analytics")
+@Slf4j
 public class StockInfoController {
-    private StockInfoService stockInfoService ;
+    private StockInfoService stockInfoService;
+    private StockWebSocketService stockWebSocketService;
 
     @Autowired
-    public StockInfoController(StockInfoService kisService) {
+    public StockInfoController(StockInfoService kisService, StockWebSocketService stockWebSocketService) {
         this.stockInfoService = kisService;
+        this.stockWebSocketService = stockWebSocketService;
     }
 
 
     @GetMapping("/productInfo")
     public ResponseEntity<ProductBasicDTO> getProductInfo(@PathVariable String stockId) {
 
-       ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
-       return ResponseEntity.ok(dto);
+        log.info("[INFO] 요청 받은 stockId = " + stockId);
+
+        // WebSocket 연결 및 구독 보장
+        stockWebSocketService.ensureConnectedAndSubscribed(stockId);
+
+        ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
+
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/stock-info")
