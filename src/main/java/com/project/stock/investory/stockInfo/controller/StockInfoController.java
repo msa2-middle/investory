@@ -1,21 +1,23 @@
 package com.project.stock.investory.stockInfo.controller;
 
 import com.project.stock.investory.stockInfo.dto.*;
+import com.project.stock.investory.stockInfo.service.StockInfoService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.project.stock.investory.stockInfo.service.StockInfoService;
 
 import java.util.List;
 
 
 @RestController
 @RequestMapping("/stock/{stockId}/analytics")
+@Slf4j
 public class StockInfoController {
-    private StockInfoService stockInfoService ;
+    private StockInfoService stockInfoService;
 
     @Autowired
     public StockInfoController(StockInfoService kisService) {
@@ -26,8 +28,9 @@ public class StockInfoController {
     @GetMapping("/productInfo")
     public ResponseEntity<ProductBasicDTO> getProductInfo(@PathVariable String stockId) {
 
-       ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
-       return ResponseEntity.ok(dto);
+        ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
+
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/stock-info")
