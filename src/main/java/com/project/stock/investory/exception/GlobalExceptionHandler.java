@@ -9,6 +9,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+
 @RestControllerAdvice // 전역 예외 처리 클래스 (모든 컨트롤러에서 발생하는 예외 처리 담당)
 public class GlobalExceptionHandler {
 
@@ -17,8 +19,9 @@ public class GlobalExceptionHandler {
      * - 예: UserNotFoundException, DuplicateEmailException 등
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<String> handleBusinessException(BusinessException e) {
-        return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+    public ResponseEntity<Map<String, String>> handleBusinessException(BusinessException e) {
+        Map<String, String> errorBody = Map.of("message", e.getMessage());
+        return ResponseEntity.status(e.getStatus()).body(errorBody);
     }
 
     /**
@@ -27,26 +30,31 @@ public class GlobalExceptionHandler {
      * - 첫 번째 필드 에러 메시지를 응답으로 내려줌
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException e) {
         String errorMessage = e.getBindingResult().getFieldError().getDefaultMessage();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", errorMessage));
     }
 
     /**
      * 요청 파라미터 누락 시 발생 (주로 쿼리 파라미터 누락)
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<String> handleMissingParamException(MissingServletRequestParameterException e) {
+    public ResponseEntity<Map<String, String>> handleMissingParamException(MissingServletRequestParameterException e) {
         String errorMessage = "필수 요청 파라미터 누락: " + e.getParameterName();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", errorMessage));
     }
 
     /**
      * 요청 본문이 잘못되었을 때 (JSON 파싱 실패 등)
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<String> handleInvalidJson(HttpMessageNotReadableException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("요청 본문의 형식이 올바르지 않습니다.");
+    public ResponseEntity<Map<String, String>> handleInvalidJson(HttpMessageNotReadableException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "요청 본문의 형식이 올바르지 않습니다."));
     }
 
     /**
@@ -55,7 +63,9 @@ public class GlobalExceptionHandler {
      * 혹시 다른 도메인에서 JPA getReference() 등을 사용할 경우를 대비하여 등록)
      */
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<String> handleEntityNotFound(EntityNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("해당 데이터를 찾을 수 없습니다.");
+    public ResponseEntity<Map<String, String>> handleEntityNotFound(EntityNotFoundException e) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "해당 데이터를 찾을 수 없습니다."));
     }
 }

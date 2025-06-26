@@ -103,6 +103,7 @@ public class UserService {
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .name(user.getName())
+                .phone(user.getPhone())
                 .build();
     }
 
