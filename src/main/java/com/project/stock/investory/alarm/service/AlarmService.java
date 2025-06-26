@@ -4,6 +4,7 @@ import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.dto.AlarmResponseDTO;
 import com.project.stock.investory.alarm.entity.Alarm;
 import com.project.stock.investory.alarm.repository.AlarmRepository;
+import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
 import io.reactivex.rxjava3.core.Observable;
@@ -42,28 +43,28 @@ public class  AlarmService {
     }
 
     // 해당 유저가 가지고 있는 알람 모두 가져오기
-    public List<Alarm> findAll(Long userId) {
+    public List<Alarm> findAll(CustomUserDetails userDetails) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(()->new EntityNotFoundException());
 
         return alarmRepository.findAlarmsByUserId(user.getUserId());
     }
 
     // 해당유저에게 알람보내주기
-    public Observable<Alarm> subscribe(Long userId) {
-        return rxSubjectManager.getObservableForUser(userId);
+    public Observable<Alarm> subscribe(CustomUserDetails userDetails) {
+        return rxSubjectManager.getObservableForUser(userDetails.getUserId());
     }
 
-    // 로그아웃 시 subjectMap에서 제거
-    public void unsubscribe(Long userId) {
-        rxSubjectManager.unsubscribe(userId);
-    }
+//    // 로그아웃 시 subjectMap에서 제거
+//    public void unsubscribe(CustomUserDetails userDetails) {
+//        rxSubjectManager.unsubscribe(userDetails.getUserId());
+//    }
 
     // 유저의 알람 모두 읽음 표시
     @Transactional
-    public int readAllAlarm(Long userId) {
-        List<Alarm> alarms = alarmRepository.findByUserUserIdAndIsReadFalse(userId);
+    public int readAllAlarm(CustomUserDetails userDetails) {
+        List<Alarm> alarms = alarmRepository.findByUserUserIdAndIsReadFalse(userDetails.getUserId());
         if (alarms.isEmpty()) {
             return 0;
         }
@@ -80,7 +81,7 @@ public class  AlarmService {
 
     // 유저의 특정 알람 읽음 표시
     @Transactional
-    public AlarmResponseDTO readOneAlarm(Long userId, Long alarmId) {
+    public AlarmResponseDTO readOneAlarm(CustomUserDetails userDetails, Long alarmId) {
         Alarm alarm = alarmRepository.findByAlarmIdAndIsReadFalse(alarmId)
                 .orElseThrow(() -> new EntityExistsException());
 

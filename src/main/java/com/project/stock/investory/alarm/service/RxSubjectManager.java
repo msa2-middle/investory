@@ -26,10 +26,10 @@ public class RxSubjectManager {
         }
     }
 
-    // 로그아웃 시 subjectMap에서 제거
-    public void unsubscribe(Long userId) {
-        subjectMap.remove(userId);
-    }
+//    // 로그아웃 시 subjectMap에서 제거
+//    public void unsubscribe(Long userId) {
+//        subjectMap.remove(userId);
+//    }
 
 }
 

@@ -13,9 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StockAlertSettingCreateRequestDTO {
-
-    private String stockId;
-
+    
     @NotBlank
     @Min(value = 1, message = "targetPrice는 1 이상이어야 합니다.")
     private int targetPrice;

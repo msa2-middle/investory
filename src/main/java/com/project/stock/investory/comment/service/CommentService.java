@@ -10,6 +10,7 @@ import com.project.stock.investory.comment.repository.CommentRepository;
 
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.repository.PostRepository;
+import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,20 +33,20 @@ public class CommentService {
 
     //  댓글 생성
     @Transactional
-    public CommentResponseDTO create(CommentRequestDTO request, Long userId, Long postId) {
+    public CommentResponseDTO create(CommentRequestDTO request, CustomUserDetails userDetails, Long postId) {
 
         // 댓글 작성자
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("이거인가?")); // 예외처리
+        User user = userRepository.findById(userDetails.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         // 게시글
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 게시글이 없습니다.")); // 예외처리
+                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         System.out.println("3");
         // 게시글 작성자
         User userPost = userRepository.findById(post.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException("게시글 작성자가 없습니다.")); // 예외처리
+                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         
         Comment comment =
@@ -110,13 +111,13 @@ public class CommentService {
 
     // 댓글 수정 // userId는 검증할 때
     public CommentResponseDTO updateComment(
-            Long userId, Long postId, Long commentId, CommentRequestDTO request
+            CustomUserDetails userDetails, Long postId, Long commentId, CommentRequestDTO request
     ) {
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
                         .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
-        if (!userId.equals(comment.getUser().getUserId())) {
+        if (!userDetails.getUserId().equals(comment.getUser().getUserId())) {
             throw new AccessDeniedException("수정 권한이 없습니다.");
         }
 
@@ -126,7 +127,7 @@ public class CommentService {
         commentRepository.save(comment);
 
         return CommentResponseDTO.builder()
-                .userId(userId)
+                .userId(userDetails.getUserId())
                 .postId(comment.getPost().getPostId())
                 .content(comment.getContent())
                 .build();
@@ -134,20 +135,20 @@ public class CommentService {
 
     // 댓글 삭제 // userId는 검증할 때
     public CommentResponseDTO deleteComment(
-            Long userId, Long postId, Long commentId
+            CustomUserDetails userDetails, Long postId, Long commentId
     ) {
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
                         .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
 
-        if (!userId.equals(comment.getUser().getUserId())) {
+        if (!userDetails.getUserId().equals(comment.getUser().getUserId())) {
             throw new AccessDeniedException("삭제 권한이 없습니다.");
         }
 
         CommentResponseDTO deleteComment =
                 CommentResponseDTO.builder()
-                        .userId(userId)
+                        .userId(userDetails.getUserId())
                         .postId(comment.getPost().getPostId())
                         .content(comment.getContent())
                         .build();

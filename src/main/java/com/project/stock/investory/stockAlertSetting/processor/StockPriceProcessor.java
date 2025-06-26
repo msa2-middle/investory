@@ -1,8 +1,5 @@
 package com.project.stock.investory.stockAlertSetting.processor;
 
-// todo: 현재 코드로는 사용자의 생성, 수정, 삭제 시 userCache에 적용이 안됨 => 이 부분은 각각에 채워줘야 함.
-// todo: 역시나 마찬가지로 목표 가격 설정도 똑같이 적용
-
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.service.AlarmService;
@@ -53,13 +50,13 @@ public class StockPriceProcessor {
         log.info("StockPriceProcessor 초기화 완료");
     }
 
-//    // 주기적으로 새로운 알람 설정을 로드 (5분마다)
-//    @Scheduled(fixedRate = 600000)
-//    public void refreshConditions() {
-//        log.info("알람 조건 새로고침 시작");
-//        loadAllConditions();
-//        refreshCaches();
-//    }
+    // 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화)
+    @Scheduled(fixedRate = 1800000)
+    public void refreshConditions() {
+        log.info("주기적 동기화 시작 (백업용)");
+        loadAllConditions();
+        refreshCaches();
+    }
 
     private void loadAllConditions() {
         try {
@@ -81,8 +78,6 @@ public class StockPriceProcessor {
 
     public void loadConditions(List<StockAlertSetting> settings) {
 
-        log.info("총 {}개의 활성 알람 조건 로드됨 여기는 내가 만든 로그", settings.size());
-
         for (StockAlertSetting setting : settings) {
             try {
                 AlertCondition condition = new AlertCondition(
@@ -93,8 +88,6 @@ public class StockPriceProcessor {
                         setting.getCondition());
 
                 if (condition.getCondition() == ConditionType.ABOVE) {
-
-                    log.info("여기로 오나요??");
 
                     overMap.computeIfAbsent(
                             condition.getStockCode(),
@@ -155,8 +148,6 @@ public class StockPriceProcessor {
             // 현재가 이하의 모든 목표가들을 가져옴 (즉, 조건을 만족하는 것들)
             SortedMap<Integer, List<AlertCondition>> matched = overConditions.headMap(currentPrice, true);
 
-            log.debug("=====================주식  현재가={}", currentPrice);
-
             notifyAndRemove(matched, stockCode, currentPrice, "이상");
         }
 
@@ -170,11 +161,11 @@ public class StockPriceProcessor {
     }
 
     private void notifyAndRemove(
-                    SortedMap<Integer,
+            SortedMap<Integer,
                     List<AlertCondition>> matched,
-                    String stockCode,
-                    int currentPrice,
-                    String conditionText
+            String stockCode,
+            int currentPrice,
+            String conditionText
     ) {
         List<AlertCondition> toRemove = new ArrayList<>();
 
@@ -208,12 +199,12 @@ public class StockPriceProcessor {
                             .builder()
                             .content(String.format
                                     (
-                                    "[주식 알림] %s님, %s 주식이 목표가 %,d원 %s에 도달했습니다. (현재가: %,d원)",
-                                    user.getName() != null ? user.getName() : "사용자",
-                                    stock.getStockName(),
-                                    cond.getTargetPrice(),
-                                    conditionText,
-                                    currentPrice
+                                            "[주식 알림] %s님, %s 주식이 목표가 %,d원 %s에 도달했습니다. (현재가: %,d원)",
+                                            user.getName() != null ? user.getName() : "사용자",
+                                            stock.getStockName(),
+                                            cond.getTargetPrice(),
+                                            conditionText,
+                                            currentPrice
                                     )
                             )
                             .type(AlarmType.STOCK_PRICE)
@@ -222,18 +213,15 @@ public class StockPriceProcessor {
                     // 알람 보내기 실행
                     alarmService.createAlarm(alarmRequest, user.getUserId());
 
-//                    // DB 업데이트 (영구적으로 비활성화)
-//                    StockAlertSetting stockAlertSetting =
-//                            stockAlertSettingRepository.findById(cond.getSettingId())
-//                                    .orElseThrow(() -> new EntityNotFoundException());
-//
-//                    stockAlertSetting =
-//                            StockAlertSetting
-//                                    .builder()
-//                                    .isActive(0)
-//                                    .build();
-//
-//                    stockAlertSettingRepository.save(stockAlertSetting);
+                    // DB 업데이트 (영구적으로 비활성화)
+                    StockAlertSetting stockAlertSetting =
+                            stockAlertSettingRepository.findById(cond.getSettingId())
+                                    .orElseThrow(() -> new EntityNotFoundException());
+
+                    // is_active 0으로 처리 후 저장
+                    stockAlertSetting.updateIsActive();
+
+                    stockAlertSettingRepository.save(stockAlertSetting);
 
                     // 처리 완료 표시 (중복 방지)
                     processedAlerts.add(cond.getSettingId());
@@ -293,6 +281,79 @@ public class StockPriceProcessor {
             log.info("알람 조건 삭제됨: settingId={}", settingId);
         } catch (Exception e) {
             log.error("알람 조건 삭제 실패: settingId={}", settingId, e);
+        }
+    }
+
+    // 사용자 캐시 업데이트 (생성/수정 시 사용)
+    public void updateUserCache(User user) {
+        userCache.put(user.getUserId(), user);
+        log.info("사용자 캐시 업데이트: userId={}", user.getUserId());
+    }
+
+    // 사용자 캐시 삭제
+    public void removeUserCache(Long userId) {
+        userCache.remove(userId);
+        log.info("사용자 캐시 삭제: userId={}", userId);
+    }
+
+
+    // 주식 알람 설정 변경 시 조건 맵 업데이트
+    public void updateStockAlertCondition(StockAlertSetting setting) {
+        try {
+            // 먼저 기존 조건 제거 (settingId로 찾아서 제거)
+            removeConditionBySettingId(setting.getSettingId());
+
+            // 활성화된 설정이면 새로 추가
+            if (setting.getIsActive() == 1) {
+                addCondition(setting);
+                log.info("알람 조건 업데이트 완료: settingId={}, 활성화됨", setting.getSettingId());
+            } else {
+                log.info("알람 조건 업데이트 완료: settingId={}, 비활성화됨", setting.getSettingId());
+            }
+        } catch (Exception e) {
+            log.error("알람 조건 업데이트 실패: settingId={}", setting.getSettingId(), e);
+        }
+    }
+
+
+    // settingId로 조건 제거 (내부 헬퍼 메서드)
+    private void removeConditionBySettingId(Long settingId) {
+        try {
+            // overMap에서 제거
+            removeFromMap(overMap, settingId);
+            // underMap에서 제거
+            removeFromMap(underMap, settingId);
+            // processedAlerts에서도 제거
+            processedAlerts.remove(settingId);
+        } catch (Exception e) {
+            log.error("settingId로 조건 제거 실패: settingId={}", settingId, e);
+        }
+    }
+
+
+    // Map에서 settingId와 일치하는 조건 제거
+    private void removeFromMap(Map<String, NavigableMap<Integer, List<AlertCondition>>> targetMap, Long settingId) {
+        for (Iterator<Map.Entry<String, NavigableMap<Integer, List<AlertCondition>>>> stockIter = targetMap.entrySet().iterator(); stockIter.hasNext(); ) {
+            Map.Entry<String, NavigableMap<Integer, List<AlertCondition>>> stockEntry = stockIter.next();
+            NavigableMap<Integer, List<AlertCondition>> priceMap = stockEntry.getValue();
+
+            for (Iterator<Map.Entry<Integer, List<AlertCondition>>> priceIter = priceMap.entrySet().iterator(); priceIter.hasNext(); ) {
+                Map.Entry<Integer, List<AlertCondition>> priceEntry = priceIter.next();
+                List<AlertCondition> conditions = priceEntry.getValue();
+
+                // settingId와 일치하는 조건 제거
+                conditions.removeIf(cond -> cond.getSettingId().equals(settingId));
+
+                // 조건 리스트가 비어있으면 가격 엔트리 제거
+                if (conditions.isEmpty()) {
+                    priceIter.remove();
+                }
+            }
+
+            // 가격 맵이 비어있으면 주식 엔트리 제거
+            if (priceMap.isEmpty()) {
+                stockIter.remove();
+            }
         }
     }
 }
