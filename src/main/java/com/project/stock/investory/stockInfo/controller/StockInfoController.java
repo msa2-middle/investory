@@ -1,8 +1,7 @@
 package com.project.stock.investory.stockInfo.controller;
 
 import com.project.stock.investory.stockInfo.dto.*;
-import com.project.stock.investory.stockInfo.service.StockWebSocketService;
-import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
+import com.project.stock.investory.stockInfo.service.StockInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.project.stock.investory.stockInfo.service.StockInfoService;
 
 import java.util.List;
 
@@ -20,22 +18,15 @@ import java.util.List;
 @Slf4j
 public class StockInfoController {
     private StockInfoService stockInfoService;
-    private StockWebSocketService stockWebSocketService;
 
     @Autowired
-    public StockInfoController(StockInfoService kisService, StockWebSocketService stockWebSocketService) {
+    public StockInfoController(StockInfoService kisService) {
         this.stockInfoService = kisService;
-        this.stockWebSocketService = stockWebSocketService;
     }
 
 
     @GetMapping("/productInfo")
     public ResponseEntity<ProductBasicDTO> getProductInfo(@PathVariable String stockId) {
-
-        log.info("[INFO] 요청 받은 stockId = " + stockId);
-
-        // WebSocket 연결 및 구독 보장
-        stockWebSocketService.ensureConnectedAndSubscribed(stockId);
 
         ProductBasicDTO dto = stockInfoService.getProductBasic(stockId);
 
