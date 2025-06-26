@@ -56,10 +56,10 @@ public class  AlarmService {
         return rxSubjectManager.getObservableForUser(userDetails.getUserId());
     }
 
-//    // 로그아웃 시 subjectMap에서 제거
-//    public void unsubscribe(CustomUserDetails userDetails) {
-//        rxSubjectManager.unsubscribe(userDetails.getUserId());
-//    }
+    // 로그아웃 시 subjectMap에서 제거
+    public void unsubscribe(CustomUserDetails userDetails) {
+        rxSubjectManager.unsubscribe(userDetails.getUserId());
+    }
 
     // 유저의 알람 모두 읽음 표시
     @Transactional
