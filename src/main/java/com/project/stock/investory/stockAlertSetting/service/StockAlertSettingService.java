@@ -58,6 +58,9 @@ public class StockAlertSettingService {
 
         StockAlertSetting savedStockAlertSetting = stockAlertSettingRepository.save(stockAlertSetting);
 
+        // 주가 알람 설정 생성 시 업데이트
+        stockPriceProcessor.updateStockAlertCondition(savedStockAlertSetting);
+
         return StockAlertSettingResponseDTO
                 .builder()
                 .userId(savedStockAlertSetting.getUser().getUserId())
