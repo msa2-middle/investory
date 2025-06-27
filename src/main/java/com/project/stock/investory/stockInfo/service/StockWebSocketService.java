@@ -1,52 +1,79 @@
 package com.project.stock.investory.stockInfo.service;
 
+
 import com.project.stock.investory.stockInfo.dto.RealTimeTradeDTO;
 import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
 public class StockWebSocketService {
+    private final KisWebSocketClient kisClient;
 
-    private final KisWebSocketClient kis;
-    private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    public StockWebSocketService(KisWebSocketClient kisClient) {
+        this.kisClient = kisClient;
+    }
 
-    public StockWebSocketService(KisWebSocketClient kis) { this.kis = kis; }
+    /**
+     * 특정 종목의 실시간 가격 정보를 SSE로 스트리밍
+     */
+    public SseEmitter getStockPriceStream(String stockId) {
+        // SSE 연결 생성 (무제한 타임아웃)
+//        SseEmitter emitter = new SseEmitter(0L);
 
-    public SseEmitter addSubscriber(String stockId) throws Exception {
-        SseEmitter emitter = new SseEmitter(0L);
-        emitters.computeIfAbsent(stockId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L); // 30분
 
-        // 끊긴 emitter 정리
-        Runnable cleanup = () -> emitters.get(stockId).remove(emitter);
-        emitter.onCompletion(cleanup);
-        emitter.onTimeout(cleanup);
-        emitter.onError(e -> cleanup.run());
 
-        // 아직 KIS에 구독 안되어 있으면 추가
-        kis.subscribe(stockId, this::broadcast);
+        log.info("종목 {} 실시간 가격 스트리밍 시작", stockId);
+
+        // 연결 성공 메시지 전송
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .data("종목 " + stockId + " 실시간 데이터 연결됨",
+                            MediaType.TEXT_PLAIN)) ;  // charset=UTF-8 로 직렬화));
+        } catch (IOException e) {
+            log.error("초기 연결 메시지 전송 실패", e);
+            emitter.completeWithError(e);
+            return emitter;
+        }
+
+        // KIS WebSocket에서 해당 종목 데이터를 받아서 SSE로 전송하는 핸들러
+        kisClient.startListening(stockId, dto -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("priceUpdate")
+                        .data(dto));
+            } catch (IOException ex) {
+                if (log.isDebugEnabled()) log.debug("SSE 끊김: {}", stockId);
+                kisClient.stopListening(stockId);
+                emitter.complete();
+            }
+        });
+
+        // SSE 연결이 끊어졌을 때 정리 작업
+        emitter.onCompletion(() -> {
+            log.info("종목 {} SSE 연결 완료", stockId);
+            kisClient.stopListening(stockId);
+        });
+
+        emitter.onTimeout(() -> {
+            log.info("종목 {} SSE 연결 타임아웃", stockId);
+            kisClient.stopListening(stockId);
+        });
+
+        emitter.onError((throwable) -> {
+            log.warn("종목 {} SSE 연결 오류", stockId, throwable);
+            kisClient.stopListening(stockId);
+        });
 
         return emitter;
     }
 
-    /* Kis 콜백 → 같은 종목 구독자에게 전파 */
-    private void broadcast(RealTimeTradeDTO dto) {
-        CopyOnWriteArrayList<SseEmitter> list =
-                emitters.getOrDefault(dto.getStockId(), new CopyOnWriteArrayList<>());
 
-        for (SseEmitter e : list) {
-            try {
-                e.send(SseEmitter.event().name("trade").data(dto));
-            } catch (IOException ex) {
-                list.remove(e);   // 리스트가 실제로 map 에 있는 객체일 때만 제거됨
-            }
-        }
-    }
 }

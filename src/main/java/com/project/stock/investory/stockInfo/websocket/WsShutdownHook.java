@@ -2,16 +2,18 @@ package com.project.stock.investory.stockInfo.websocket;
 
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class WsShutdownHook {
+    private final KisWebSocketClient kisClient;
 
-    private final KisWebSocketClient kis;
-
-    @PreDestroy                // 🎯 스프링 컨텍스트 종료 직전 자동 호출
+    @PreDestroy
     public void shutdown() {
-        kis.disconnect();
+        log.info("애플리케이션 종료 - KIS WebSocket 연결 해제");
+        kisClient.disconnect();
     }
 }
