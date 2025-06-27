@@ -34,7 +34,7 @@ public class AlarmController {
     // 해당 유저에게 알람 보내기
     @GetMapping("/sse")
     public SseEmitter streamSse(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        SseEmitter emitter = new SseEmitter(1000L); // 5분 타임아웃
+        SseEmitter emitter = new SseEmitter(60*60*1000L); // 5분 타임아웃
 
         alarmService.subscribe(userDetails).subscribe(alarm -> {
             try {
