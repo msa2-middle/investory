@@ -5,10 +5,14 @@ import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.comment.dto.CommentRequestDTO;
 import com.project.stock.investory.comment.dto.CommentResponseDTO;
+import com.project.stock.investory.comment.exception.CommentAccessDeniedException;
+import com.project.stock.investory.comment.exception.CommentNotFoundException;
+import com.project.stock.investory.comment.exception.UserNotFoundException;
 import com.project.stock.investory.comment.model.Comment;
 import com.project.stock.investory.comment.repository.CommentRepository;
 
 import com.project.stock.investory.post.entity.Post;
+import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
@@ -37,20 +41,20 @@ public class CommentService {
 
         // 댓글 작성자
         User user = userRepository.findById(userDetails.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                .orElseThrow(() -> new UserNotFoundException()); // 예외처리
 
         // 게시글
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                .orElseThrow(() -> new PostNotFoundException()); // 예외처리
 
         System.out.println("3");
         // 게시글 작성자
         User userPost = userRepository.findById(post.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                .orElseThrow(() -> new UserNotFoundException()); // 예외처리
 
-        
+
         Comment comment =
-                    Comment
+                Comment
                         .builder()
                         .user(user)
                         .post(post)
@@ -61,8 +65,12 @@ public class CommentService {
 
         AlarmRequestDTO alarmRequest = AlarmRequestDTO
                 .builder()
-                .content(userPost.getName() + "님의 " + post.getTitle() +" 게시글에 " + user.getName() + " 님이 댓글을 남겼습니다.")
-//                .content(post.getUser().getName() + "님의 " + post.getContent().substring(0, 2) + "..."  +" 게시글에 " + user.getName() + " 님이 댓글을 남겼습니다.")
+                .content(userPost.getName()
+                        + "님의 "
+                        + post.getTitle()
+                        + " 게시글에 "
+                        + user.getName()
+                        + " 님이 댓글을 남겼습니다.")
                 .type(AlarmType.COMMENT)
                 .build();
 
@@ -83,7 +91,7 @@ public class CommentService {
         List<Comment> comments = commentRepository.findByPostPostId(postId);
 
         if (comments.isEmpty()) {
-            throw new EntityNotFoundException();
+            throw new CommentNotFoundException();
         }
 
         return comments.stream()
@@ -100,7 +108,7 @@ public class CommentService {
 
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
-                        .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
 
         return CommentResponseDTO.builder()
                 .userId(comment.getUser().getUserId())
@@ -115,10 +123,10 @@ public class CommentService {
     ) {
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
-                        .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
 
         if (!userDetails.getUserId().equals(comment.getUser().getUserId())) {
-            throw new AccessDeniedException("수정 권한이 없습니다.");
+            throw new CommentAccessDeniedException();
         }
 
         // 엔티티 내부 메서드로 상태 변경 (유효성 검증 포함)
@@ -139,11 +147,11 @@ public class CommentService {
     ) {
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
-                        .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
 
 
         if (!userDetails.getUserId().equals(comment.getUser().getUserId())) {
-            throw new AccessDeniedException("삭제 권한이 없습니다.");
+            throw new CommentAccessDeniedException();
         }
 
         CommentResponseDTO deleteComment =
