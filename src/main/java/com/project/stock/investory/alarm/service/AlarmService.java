@@ -3,7 +3,10 @@ package com.project.stock.investory.alarm.service;
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.dto.AlarmResponseDTO;
 import com.project.stock.investory.alarm.entity.Alarm;
+import com.project.stock.investory.alarm.exception.AlarmNotFoundException;
+import com.project.stock.investory.alarm.exception.UserNotFoundException;
 import com.project.stock.investory.alarm.repository.AlarmRepository;
+import com.project.stock.investory.alarm.exception.AuthenticationRequiredException;
 import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
@@ -30,7 +33,7 @@ public class  AlarmService {
     public Alarm createAlarm(AlarmRequestDTO dto, Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(()->new EntityNotFoundException());
+                .orElseThrow(()->new UserNotFoundException());
 
         Alarm alarm = Alarm.builder()
                 .user(user)
@@ -45,10 +48,20 @@ public class  AlarmService {
     // 해당 유저가 가지고 있는 알람 모두 가져오기
     public List<Alarm> findAll(CustomUserDetails userDetails) {
 
-        User user = userRepository.findById(userDetails.getUserId())
-                .orElseThrow(()->new EntityNotFoundException());
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
 
-        return alarmRepository.findAlarmsByUserId(user.getUserId());
+        User user = userRepository.findById(userDetails.getUserId())
+                .orElseThrow(()->new UserNotFoundException());
+
+        List<Alarm> alarms = alarmRepository.findAlarmsByUserId(user.getUserId());
+
+        if (alarms.isEmpty()) {
+            throw new AlarmNotFoundException();
+        }
+
+        return alarms;
     }
 
     // 해당유저에게 알람보내주기
@@ -64,6 +77,11 @@ public class  AlarmService {
     // 유저의 알람 모두 읽음 표시
     @Transactional
     public int readAllAlarm(CustomUserDetails userDetails) {
+
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
+
         List<Alarm> alarms = alarmRepository.findByUserUserIdAndIsReadFalse(userDetails.getUserId());
         if (alarms.isEmpty()) {
             return 0;
@@ -82,10 +100,16 @@ public class  AlarmService {
     // 유저의 특정 알람 읽음 표시
     @Transactional
     public AlarmResponseDTO readOneAlarm(CustomUserDetails userDetails, Long alarmId) {
+
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
+
         Alarm alarm = alarmRepository.findByAlarmIdAndIsReadFalse(alarmId)
-                .orElseThrow(() -> new EntityExistsException());
+                .orElseThrow(() -> new AlarmNotFoundException());
 
         alarm.updateAlarmIsRead();
+        alarmRepository.save(alarm);
 
         return AlarmResponseDTO.builder()
                 .alarmId(alarm.getAlarmId())
