@@ -6,6 +6,7 @@ import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingCreate
 import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingResponseDTO;
 import com.project.stock.investory.stockAlertSetting.dto.StockAlertSettingUpdateRequestDTO;
 import com.project.stock.investory.stockAlertSetting.model.StockAlertSetting;
+import com.project.stock.investory.stockAlertSetting.processor.StockPriceProcessor;
 import com.project.stock.investory.stockAlertSetting.repository.StockAlertSettingRepository;
 import com.project.stock.investory.stockInfo.model.Stock;
 import com.project.stock.investory.stockInfo.repository.StockRepository;
@@ -28,6 +29,7 @@ public class StockAlertSettingService {
     private final StockAlertSettingRepository stockAlertSettingRepository;
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
+    private final StockPriceProcessor stockPriceProcessor;
 
     // 주가 알람 설정 생성
     public StockAlertSettingResponseDTO create(String stockId, StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
@@ -55,6 +57,9 @@ public class StockAlertSettingService {
                         .build();
 
         StockAlertSetting savedStockAlertSetting = stockAlertSettingRepository.save(stockAlertSetting);
+
+        // 주가 알람 설정 생성 시 업데이트
+        stockPriceProcessor.updateStockAlertCondition(savedStockAlertSetting);
 
         return StockAlertSettingResponseDTO
                 .builder()
@@ -114,9 +119,20 @@ public class StockAlertSettingService {
                 .orElseThrow(() -> new EntityNotFoundException()); // 예외처리
 
         // 엔티티 내부 메서드로 상태 변경 (유효성 검증 포함)
-        setting.updateSetting(request.getTargetPrice(), request.getCondition());
+        // null이 아닌 필드만 업데이트 => updateDTO에서 int를 Integer로 변경
+        if (request.getTargetPrice() != null) {
+            setting.updateTargetPrice(request.getTargetPrice());
+        }
 
+        if (request.getCondition() != null) {
+            setting.updateCondition(request.getCondition());
+        }
+
+        // 저장
         stockAlertSettingRepository.save(setting);
+
+        // 업데이트 시 StockPriceProcessor 캐시 부분 업데이트
+        stockPriceProcessor.updateStockAlertCondition(setting);
 
         return StockAlertSettingResponseDTO.builder()
                 .userId(setting.getUser().getUserId())

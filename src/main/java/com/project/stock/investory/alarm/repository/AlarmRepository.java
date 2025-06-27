@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findByUserUserIdOrderByCreatedAtDesc(Long userId);
 
-    @Query("SELECT a FROM Alarm a WHERE a.user.userId = :userId ORDER BY a.createdAt DESC")
+    @Query("SELECT a FROM Alarm a WHERE a.user.userId = :userId AND a.isRead = 0 ORDER BY a.createdAt DESC")
     List<Alarm> findAlarmsByUserId(@Param("userId") Long userId);
 
     List<Alarm> findByUserUserIdAndIsReadFalse(Long userId);
