@@ -208,6 +208,7 @@ public class UserService {
                 .map(post -> PostSimpleResponseDto.builder()
                         .postId(post.getPostId())
                         .title(post.getTitle())
+                        .createdAt(post.getCreatedAt())
                         .build())
                 .toList();
     }
@@ -221,6 +222,7 @@ public class UserService {
                 .map(like -> PostSimpleResponseDto.builder()
                         .postId(like.getPost().getPostId())
                         .title(like.getPost().getTitle())
+                        .createdAt(like.getCreatedAt())
                         .build())
                 .toList();
     }
