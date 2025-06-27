@@ -22,7 +22,7 @@ public class KisWebSocketClient {
     @Value("${kis.ws.url:ws://ops.koreainvestment.com:21000/WebSocket}")
     private String wsUrl;
 
-    @Value("${kis.approval-key}")
+    @Value("${sse.approval_key}")
     private String approvalKey;
 
     private final ObjectMapper om = new ObjectMapper();
@@ -334,4 +334,3 @@ public class KisWebSocketClient {
         }).start();
     }
 }
-
