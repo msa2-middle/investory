@@ -9,6 +9,7 @@ import com.project.stock.investory.post.entity.PostLike;
 import com.project.stock.investory.post.repository.PostLikeRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.security.CustomUserDetails;
+import com.project.stock.investory.stockAlertSetting.processor.StockPriceProcessor;
 import com.project.stock.investory.user.dto.*;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.exception.*;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +34,32 @@ public class UserService {
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final StockPriceProcessor stockPriceProcessor;
+    private static final Pattern LETTER_PATTERN = Pattern.compile("[a-zA-Z]");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d");
+    private static final Pattern SPECIAL_PATTERN = Pattern.compile("[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]");
 
+
+
+    private void validatePasswordStrength(String password) {
+        int score = 0;
+
+        // 길이가 8자 이상이면 +1
+        if (password.length() >= 8) score++;
+
+        // 영문자(a~z 또는 A~Z)가 있으면 +1
+        if (LETTER_PATTERN.matcher(password).find()) score++;
+
+        // 숫자(0~9)가 있으면 +1
+        if (DIGIT_PATTERN.matcher(password).find()) score++;
+
+        // 특수문자(예: !, @, # 등)가 있으면 +1
+        if (SPECIAL_PATTERN.matcher(password).find()) score++;
+
+        if (score < 3) { // 기본 조건 (길이 + 영문자 + 숫자 만족해야 통과)
+            throw new WeakPasswordException();
+        }
+    }
     // 회원가입 (일반 회원가입만 처리)
     @Transactional
     public UserResponseDto signup(UserRequestDto request) {
@@ -41,6 +68,9 @@ public class UserService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new DuplicateEmailException();
         }
+
+        // 비밀번호 복잡도 검사
+        validatePasswordStrength(request.getPassword());
 
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
@@ -56,6 +86,9 @@ public class UserService {
 
         // DB 저장
         User savedUser = userRepository.save(user);
+
+        // 캐시 등록
+        stockPriceProcessor.updateUserCache(savedUser);
 
         // 응답 DTO 반환
         return UserResponseDto.builder()
@@ -117,6 +150,9 @@ public class UserService {
 
         user.updateInfo(request.getName(), phoneToUpdate);
 
+        // 캐시 갱신
+        stockPriceProcessor.updateUserCache(user);
+
         return UserResponseDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
@@ -139,6 +175,9 @@ public class UserService {
             throw new InvalidPasswordException();
         }
 
+        // 새 비밀번호 복잡도 검사
+        validatePasswordStrength(request.getNewPassword());
+
         // 새 비밀번호 암호화 및 저장
         String encoded = passwordEncoder.encode(request.getNewPassword());
         user.changePassword(encoded);
@@ -155,6 +194,9 @@ public class UserService {
         }
 
         user.withdraw();
+
+        // 캐시 제거
+        stockPriceProcessor.removeUserCache(user.getUserId());
     }
 
     // 내가 작성한 게시글 목록 조회
