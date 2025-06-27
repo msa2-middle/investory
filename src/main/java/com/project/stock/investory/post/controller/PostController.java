@@ -2,6 +2,7 @@ package com.project.stock.investory.post.controller;
 
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
+import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.service.PostService;
 import com.project.stock.investory.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,15 @@ public class PostController {
     public ResponseEntity<PostDto> getPostById(@PathVariable Long postId) {
         PostDto postDto = postService.getPostById(postId);
         return ResponseEntity.ok(postDto);
+    }
+
+
+    // postId로 작성자 이름 찾기
+    @Operation(summary = "postId로 작성자 이름 찾기")
+    @GetMapping("/community/posts/author/{postId}")
+    public ResponseEntity<PostWithAuthorDto> getPost(@PathVariable Long postId) {
+        PostWithAuthorDto dto = postService.getPostWithAuthor(postId);
+        return ResponseEntity.ok(dto);
     }
 
     // 개시글 수정

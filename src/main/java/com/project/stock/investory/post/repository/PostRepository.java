@@ -1,5 +1,6 @@
 package com.project.stock.investory.post.repository;
 
+import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
 import org.apache.ibatis.annotations.Param;
@@ -32,6 +33,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 특정 사용자가 작성한 게시글 전체 조회
     List<Post> findByUserId(Long userId);
+
+    // postId로 작성자 이름 가져오기
+    @Query("SELECT new com.project.stock.investory.post.dto.PostWithAuthorDto(p.postId, p.title, p.content, u.name) " +
+            "FROM Post p, User u WHERE p.userId = u.userId AND p.postId = :postId")
+    Optional<PostWithAuthorDto> findPostWithAuthorById(@Param("postId") Long postId);
 
 }
 
