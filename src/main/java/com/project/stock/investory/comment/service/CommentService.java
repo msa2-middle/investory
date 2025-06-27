@@ -5,21 +5,19 @@ import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.comment.dto.CommentRequestDTO;
 import com.project.stock.investory.comment.dto.CommentResponseDTO;
+import com.project.stock.investory.comment.exception.AuthenticationRequiredException;
 import com.project.stock.investory.comment.exception.CommentAccessDeniedException;
 import com.project.stock.investory.comment.exception.CommentNotFoundException;
 import com.project.stock.investory.comment.exception.UserNotFoundException;
 import com.project.stock.investory.comment.model.Comment;
 import com.project.stock.investory.comment.repository.CommentRepository;
-
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +36,10 @@ public class CommentService {
     //  댓글 생성
     @Transactional
     public CommentResponseDTO create(CommentRequestDTO request, CustomUserDetails userDetails, Long postId) {
+
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
 
         // 댓글 작성자
         User user = userRepository.findById(userDetails.getUserId())
@@ -121,6 +123,11 @@ public class CommentService {
     public CommentResponseDTO updateComment(
             CustomUserDetails userDetails, Long postId, Long commentId, CommentRequestDTO request
     ) {
+
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
+
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
                         .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
@@ -145,6 +152,11 @@ public class CommentService {
     public CommentResponseDTO deleteComment(
             CustomUserDetails userDetails, Long postId, Long commentId
     ) {
+
+        if (userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
+
         Comment comment =
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
                         .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
