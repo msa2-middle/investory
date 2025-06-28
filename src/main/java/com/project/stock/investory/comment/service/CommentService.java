@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,6 +62,8 @@ public class CommentService {
                         .user(user)
                         .post(post)
                         .content(request.getContent())
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
                         .build();
 
         Comment savedComment = commentRepository.save(comment);
@@ -80,9 +83,13 @@ public class CommentService {
 
         return CommentResponseDTO
                 .builder()
+                .commentId(savedComment.getCommentId())
                 .userId(savedComment.getUser().getUserId())
                 .postId(savedComment.getPost().getPostId())
                 .content(savedComment.getContent())
+                .likeCount(savedComment.getLikeCount())
+                .createdAt(savedComment.getCreatedAt())
+                .userName(savedComment.getUser().getName())
                 .build();
 
     }
@@ -98,9 +105,13 @@ public class CommentService {
 
         return comments.stream()
                 .map(comment -> CommentResponseDTO.builder()
+                        .commentId(comment.getCommentId())
                         .userId(comment.getUser().getUserId())
                         .postId(comment.getPost().getPostId())
                         .content(comment.getContent())
+                        .userName(comment.getUser().getName())
+                        .likeCount(comment.getLikeCount())
+                        .createdAt(comment.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -113,9 +124,13 @@ public class CommentService {
                         .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
 
         return CommentResponseDTO.builder()
+                .commentId(comment.getCommentId())
                 .userId(comment.getUser().getUserId())
                 .postId(comment.getPost().getPostId())
                 .content(comment.getContent())
+                .likeCount(comment.getLikeCount())
+                .userName(comment.getUser().getName())
+                .createdAt(comment.getCreatedAt())
                 .build();
     }
 
@@ -142,9 +157,13 @@ public class CommentService {
         commentRepository.save(comment);
 
         return CommentResponseDTO.builder()
+                .commentId(comment.getCommentId())
                 .userId(userDetails.getUserId())
                 .postId(comment.getPost().getPostId())
                 .content(comment.getContent())
+                .likeCount(comment.getLikeCount())
+                .createdAt(comment.getCreatedAt())
+                .userName(comment.getUser().getName())
                 .build();
     }
 
@@ -168,6 +187,7 @@ public class CommentService {
 
         CommentResponseDTO deleteComment =
                 CommentResponseDTO.builder()
+                        .commentId(comment.getCommentId())
                         .userId(userDetails.getUserId())
                         .postId(comment.getPost().getPostId())
                         .content(comment.getContent())
