@@ -2,6 +2,7 @@ package com.project.stock.investory.post.service;
 
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
+import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.exception.AuthenticationRequiredException;
@@ -90,6 +91,13 @@ public class PostService {
         return convertToDto(post);
     }
 
+    // 3. 게시글 상세 조회 (작성자 이름 포함)
+    @Transactional(readOnly = true)
+    public PostWithAuthorDto getPostWithAuthor(Long postId) {
+        return postRepository.findPostWithAuthorById(postId)
+                .orElseThrow(PostNotFoundException::new);
+    }
+
     // mapping util method
     private PostDto convertToDto(Post post) {
         return PostDto.builder()
@@ -159,6 +167,7 @@ public class PostService {
 
         postRepository.delete(post);
     }
+
 
 }
 
