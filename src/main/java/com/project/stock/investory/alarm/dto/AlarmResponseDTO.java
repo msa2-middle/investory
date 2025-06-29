@@ -5,13 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class AlarmResponseDTO {
-
+@SuperBuilder
+public abstract class AlarmResponseDTO {
     private Long alarmId;
     private String content;
     private AlarmType type;

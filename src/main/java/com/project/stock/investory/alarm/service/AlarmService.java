@@ -1,8 +1,8 @@
 package com.project.stock.investory.alarm.service;
 
-import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
-import com.project.stock.investory.alarm.dto.AlarmResponseDTO;
+import com.project.stock.investory.alarm.dto.*;
 import com.project.stock.investory.alarm.entity.Alarm;
+import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.exception.AlarmNotFoundException;
 import com.project.stock.investory.alarm.exception.UserNotFoundException;
 import com.project.stock.investory.alarm.repository.AlarmRepository;
@@ -28,9 +28,8 @@ public class  AlarmService {
     private final RxSubjectManager rxSubjectManager;
 
     // 알람 생성하기
-    // todo: 저장할 때 userId만 넘겨주기
     @Transactional
-    public Alarm createAlarm(AlarmRequestDTO dto, Long userId) {
+    public void createAlarm(AlarmRequestDTO dto, Long userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(()->new UserNotFoundException());
@@ -41,8 +40,74 @@ public class  AlarmService {
                 .type(dto.getType())
                 .build();
         Alarm saved = alarmRepository.save(alarm);
+
+        convertToResponseDTO(
+                saved,
+                dto.getType(),
+                dto.getStockId(),
+                dto.getPostId(),
+                dto.getCommentId()
+        );
+
         rxSubjectManager.emit(user.getUserId(), saved);
-        return saved;
+    }
+
+    // 타입 별로 responseDTO 변환하기
+    public AlarmResponseDTO convertToResponseDTO(
+            Alarm alarm,
+            AlarmType type,
+            String stockId,
+            Long postId,
+            Long commentId
+    ) {
+        switch (alarm.getType()) {
+            case AlarmType.STOCK_PRICE:
+                StockAlertSettingResponseDTO settingResponse = StockAlertSettingResponseDTO.builder()
+                        .alarmId(alarm.getAlarmId())
+                        .content(alarm.getContent())
+                        .type(alarm.getType())
+                        .isRead(alarm.getIsRead())
+                        .stockId(stockId)
+                        .build();
+
+                return settingResponse;
+
+            case AlarmType.COMMENT:
+                PostResponseDTO postResponseDTO = PostResponseDTO.builder()
+                        .alarmId(alarm.getAlarmId())
+                        .content(alarm.getContent())
+                        .type(alarm.getType())
+                        .isRead(alarm.getIsRead())
+                        .postId(postId)
+                        .build();
+
+                return postResponseDTO;
+
+            case AlarmType.POST_LIKE:
+                PostResponseDTO postResponseLikeDTO = PostResponseDTO.builder()
+                        .alarmId(alarm.getAlarmId())
+                        .content(alarm.getContent())
+                        .type(alarm.getType())
+                        .isRead(alarm.getIsRead())
+                        .postId(postId)
+                        .build();
+
+                return postResponseLikeDTO;
+
+            case AlarmType.COMMENT_LIKE:
+                CommentResponseDTO commentResponseDTO = CommentResponseDTO.builder()
+                        .alarmId(alarm.getAlarmId())
+                        .content(alarm.getContent())
+                        .type(alarm.getType())
+                        .isRead(alarm.getIsRead())
+                        .commentId(commentId)
+                        .build();
+
+                return commentResponseDTO;
+
+            default:
+                throw new IllegalArgumentException("Unknown alarm type");
+        }
     }
 
     // 해당 유저가 가지고 있는 알람 모두 가져오기
@@ -99,7 +164,7 @@ public class  AlarmService {
 
     // 유저의 특정 알람 읽음 표시
     @Transactional
-    public AlarmResponseDTO readOneAlarm(CustomUserDetails userDetails, Long alarmId) {
+    public Alarm readOneAlarm(CustomUserDetails userDetails, Long alarmId) {
 
         if (userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
@@ -111,11 +176,7 @@ public class  AlarmService {
         alarm.updateAlarmIsRead();
         alarmRepository.save(alarm);
 
-        return AlarmResponseDTO.builder()
-                .alarmId(alarm.getAlarmId())
-                .content(alarm.getContent())
-                .isRead(alarm.getIsRead())
-                .build();
+        return alarm;
     }
 
 
