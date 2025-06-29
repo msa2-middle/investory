@@ -50,6 +50,27 @@ public class StockPriceProcessor {
         log.info("StockPriceProcessor 초기화 완료");
     }
 
+//    // 테스트용
+//    @Scheduled(initialDelay = 10000)
+//    public void test1() {
+//        process("201490", 5590);
+//
+//    }
+//
+//    @Scheduled(initialDelay = 20000)
+//    public void test2() {
+//
+//        process("417860", 22450);
+//
+//    }
+//
+//    @Scheduled(initialDelay = 30000)
+//    public void test3() {
+//
+//        process("060250", 11080);
+//    }
+    
+    
     // 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화)
     @Scheduled(fixedRate = 1800000)
     public void refreshConditions() {

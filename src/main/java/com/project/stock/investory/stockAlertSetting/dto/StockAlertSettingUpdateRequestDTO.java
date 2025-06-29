@@ -16,7 +16,7 @@ public class StockAlertSettingUpdateRequestDTO {
 
     @NotBlank
     @Min(value = 1, message = "targetPrice는 1 이상이어야 합니다.")
-    private int targetPrice;
+    private Integer targetPrice;
 
     @NotNull(message = "조건을 입력해주세요.")
     private ConditionType condition;

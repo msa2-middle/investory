@@ -1,7 +1,9 @@
 package com.project.stock.investory.commentLike.service;
 
+import com.project.stock.investory.comment.exception.CommentNotFoundException;
 import com.project.stock.investory.comment.model.Comment;
 import com.project.stock.investory.comment.repository.CommentRepository;
+import com.project.stock.investory.commentLike.exception.UserNotFoundException;
 import com.project.stock.investory.commentLike.model.CommentLike;
 import com.project.stock.investory.commentLike.repository.CommentLikeRepository;
 import com.project.stock.investory.security.CustomUserDetails;
@@ -28,10 +30,10 @@ public class CommentLikeService {
     public void addCommentLike(CustomUserDetails userDetails, Long commentId) {
 
         Comment comment = commentRepository.findByCommentId(commentId)
-                .orElseThrow(() -> new EntityNotFoundException());
+                .orElseThrow(() -> new CommentNotFoundException());
 
         User user = userRepository.findById(userDetails.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException());
+                .orElseThrow(() -> new UserNotFoundException());
 
         Optional<CommentLike> commentLike =
                 commentLikeRepository.findByUserUserIdAndCommentCommentId(user.getUserId(), comment.getCommentId());
