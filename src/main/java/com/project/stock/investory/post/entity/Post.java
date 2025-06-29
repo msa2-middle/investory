@@ -1,11 +1,14 @@
 package com.project.stock.investory.post.entity;
 
+import com.project.stock.investory.comment.model.Comment;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "post")
@@ -50,4 +53,21 @@ public class Post {
     @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+
+    /**
+     * Cascade - post삭제시 관련 자식 데이터 삭제
+     */
+
+    // postlike
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @Builder.Default
+    private List<PostLike> postLikes = new ArrayList<>();
+
+
+    // comment
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
 }
