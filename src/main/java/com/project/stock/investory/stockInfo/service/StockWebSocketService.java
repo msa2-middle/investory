@@ -1,14 +1,16 @@
 package com.project.stock.investory.stockInfo.service;
 
 
-import com.project.stock.investory.stockInfo.dto.RealTimeTradeDTO;
+import com.project.stock.investory.stockInfo.util.StockMarketUtils;
 import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
+import io.jsonwebtoken.io.IOException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,6 +30,17 @@ public class StockWebSocketService {
      * 특정 종목의 실시간 가격 정보를 SSE로 스트리밍
      */
     public SseEmitter getStockPriceStream(String stockId) {
+        // 국내장 시간
+        if (!StockMarketUtils.isTradingHours()) {
+            log.info("장 외 시간, SSE 연결 차단: {}", stockId);
+            SseEmitter emitter = new SseEmitter(0L);
+            try {
+                emitter.send(SseEmitter.event().name("marketClosed").data("장 외 시간입니다."));
+            } catch (Exception ignored) {}
+            emitter.complete();
+            return emitter;
+        }
+
         // 기존 연결이 있으면 정리
         SseEmitter existingEmitter = activeEmitters.get(stockId);
         if (existingEmitter != null) {
@@ -49,7 +62,7 @@ public class StockWebSocketService {
             emitter.send(SseEmitter.event()
                     .name("connected")
                     .data("종목 " + stockId + " 실시간 데이터 연결됨", MediaType.TEXT_PLAIN));
-        } catch (IOException e) {
+        } catch (IOException | java.io.IOException e) {
             log.error("초기 연결 메시지 전송 실패: {}", stockId, e);
             cleanupEmitter(stockId, emitter);
             emitter.completeWithError(e);
