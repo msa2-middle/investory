@@ -1,6 +1,7 @@
 package com.project.stock.investory.comment.model;
 
 
+import com.project.stock.investory.commentLike.model.CommentLike;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.user.entity.User;
 import jakarta.persistence.*;
@@ -15,6 +16,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "comments")
@@ -39,6 +41,10 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // 댓글 좋아요 목록 - CASCADE 설정으로 댓글 삭제 시 좋아요도 함께 삭제
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentLike> commentLikes;
 
     // 댓글 내용
     @Lob
