@@ -23,8 +23,8 @@ public class PostLikeController {
     @PostMapping("/{postId}/likes")
     public ResponseEntity<Void> likePost(@PathVariable Long postId,
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        postLikeService.likePost(userId, postId);
+
+        postLikeService.likePost(userDetails, postId);
         return ResponseEntity.ok().build();
     }
 
@@ -33,8 +33,7 @@ public class PostLikeController {
     @DeleteMapping("/{postId}/likes")
     public ResponseEntity<Void> unlikePost(@PathVariable Long postId,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        postLikeService.unlikePost(userId, postId);
+        postLikeService.unlikePost(userDetails, postId);
         return ResponseEntity.ok().build();
     }
 
@@ -51,8 +50,7 @@ public class PostLikeController {
     @GetMapping("/{postId}/likes/check")
     public ResponseEntity<Boolean> hasUserLiked(@PathVariable Long postId,
                                                 @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        boolean liked = postLikeService.hasUserLiked(userId, postId);
+        boolean liked = postLikeService.hasUserLiked(userDetails, postId);
         return ResponseEntity.ok(liked);
     }
 }

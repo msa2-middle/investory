@@ -1,13 +1,15 @@
 package com.project.stock.investory.commentLike.service;
 
+import com.project.stock.investory.comment.exception.CommentNotFoundException;
 import com.project.stock.investory.comment.model.Comment;
 import com.project.stock.investory.comment.repository.CommentRepository;
+import com.project.stock.investory.commentLike.dto.CommentLikeResponseDTO;
+import com.project.stock.investory.commentLike.exception.UserNotFoundException;
 import com.project.stock.investory.commentLike.model.CommentLike;
 import com.project.stock.investory.commentLike.repository.CommentLikeRepository;
 import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,40 +24,62 @@ public class CommentLikeService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
 
-
-    // 댓글 좋아요 설정
+    // 댓글 좋아요 토글 (좋아요/좋아요 취소)
     @Transactional
-    public void addCommentLike(CustomUserDetails userDetails, Long commentId) {
-
+    public CommentLikeResponseDTO toggleCommentLike(CustomUserDetails userDetails, Long commentId) {
         Comment comment = commentRepository.findByCommentId(commentId)
-                .orElseThrow(() -> new EntityNotFoundException());
+                .orElseThrow(() -> new CommentNotFoundException());
 
         User user = userRepository.findById(userDetails.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException());
+                .orElseThrow(() -> new UserNotFoundException());
 
-        Optional<CommentLike> commentLike =
+        Optional<CommentLike> existingLike =
                 commentLikeRepository.findByUserUserIdAndCommentCommentId(user.getUserId(), comment.getCommentId());
 
+        boolean isLiked;
+        int newLikeCount;
 
-        if (commentLike.isPresent()) {
-            // commentLike 는 Optinal 객체라서 delete 메서드를 바로 사용하지 못한다.
-            CommentLike like = commentLike.get();
-            commentLikeRepository.delete(like);
-
-            comment.updateCommentLike(comment.getLikeCount() - 1);
-            commentRepository.save(comment);
-
+        if (existingLike.isPresent()) {
+            // 좋아요 취소
+            commentLikeRepository.delete(existingLike.get());
+            newLikeCount = Math.max(comment.getLikeCount() - 1, 0);
+            comment.updateCommentLike(newLikeCount);
+            isLiked = false;
         } else {
-            CommentLike newCommentLike = CommentLike
-                                            .builder()
-                                            .user(user)
-                                            .comment(comment)
-                                            .build();
+            // 좋아요 추가
+            CommentLike newCommentLike = CommentLike.builder()
+                    .user(user)
+                    .comment(comment)
+                    .build();
             commentLikeRepository.save(newCommentLike);
-
-            comment.updateCommentLike(comment.getLikeCount() + 1);
-            commentRepository.save(comment);
+            newLikeCount = comment.getLikeCount() + 1;
+            comment.updateCommentLike(newLikeCount);
+            isLiked = true;
         }
 
+        commentRepository.save(comment);
+
+        return CommentLikeResponseDTO.builder()
+                .isLiked(isLiked)
+                .likeCount(newLikeCount)
+                .build();
     }
+
+    // 사용자의 댓글 좋아요 상태 확인
+    public boolean hasUserLikedComment(CustomUserDetails userDetails, Long commentId) {
+        if (userDetails == null) {
+            return false;
+        }
+
+        return commentLikeRepository.findByUserUserIdAndCommentCommentId(
+                userDetails.getUserId(), commentId).isPresent();
+    }
+
+    // 댓글의 총 좋아요 수 조회
+    public int getCommentLikeCount(Long commentId) {
+        Comment comment = commentRepository.findByCommentId(commentId)
+                .orElseThrow(() -> new CommentNotFoundException());
+        return comment.getLikeCount();
+    }
+
 }

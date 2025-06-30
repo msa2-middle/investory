@@ -2,6 +2,7 @@ package com.project.stock.investory.post.service;
 
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
+import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.exception.AuthenticationRequiredException;
@@ -9,6 +10,7 @@ import com.project.stock.investory.post.exception.PostAccessDeniedException;
 import com.project.stock.investory.post.exception.PostNotFoundException;
 import com.project.stock.investory.post.repository.BoardRepository;
 import com.project.stock.investory.post.repository.PostRepository;
+import com.project.stock.investory.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +31,7 @@ public class PostService {
      * stock_id에 해당하는 Board가 없다면 자동 생성(board_id와 stock_id)
      */
     @Transactional // @Transactional 있어야 Board save & Post save 함께 처리됨 (롤백 안전)
-    public PostDto createPost(String stockId, PostRequestDto request, Long userId) {
+    public PostDto createPost(String stockId, PostRequestDto request, CustomUserDetails userDetails) {
 
         // 1. stockId에 해당하는 Board 찾기 (없으면 새로 생성)
         Board board = boardRepository.findByStockId(stockId)
@@ -39,7 +41,7 @@ public class PostService {
 
         // 2. Post Entity 생성
         Post post = Post.builder()
-                .userId(userId)
+                .userId(userDetails.getUserId())
                 .board(board)  // FK 값(Board)은 엔티티 자체로 넣어야 함 (Long boardId 불가, JPA의 FK 연관관계)
                 .title(request.getTitle())
                 .content(request.getContent())
@@ -76,7 +78,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public List<PostDto> getPostsByStockId(String stockId) {
         Board board = boardRepository.findByStockId(stockId)
-                .orElseThrow(() -> new PostNotFoundException());
+                .orElseThrow(PostNotFoundException::new);
         return postRepository.findByBoard(board).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -86,8 +88,15 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostDto getPostById(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new PostNotFoundException());
+                .orElseThrow(PostNotFoundException::new);
         return convertToDto(post);
+    }
+
+    // 3. 게시글 상세 조회 (작성자 이름 포함)
+    @Transactional(readOnly = true)
+    public PostWithAuthorDto getPostWithAuthor(Long postId) {
+        return postRepository.findPostWithAuthorById(postId)
+                .orElseThrow(PostNotFoundException::new);
     }
 
     // mapping util method
@@ -110,12 +119,12 @@ public class PostService {
      * [Update]
      */
     @Transactional
-    public PostDto updatePost(Long postId, PostRequestDto request, Long userId) {
+    public PostDto updatePost(Long postId, PostRequestDto request, CustomUserDetails userDetails) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new PostNotFoundException());
+                .orElseThrow(PostNotFoundException::new);
 
         // 작성자 확인
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getUserId().equals(userDetails.getUserId())) {
             throw new PostAccessDeniedException();
         }
 
@@ -141,24 +150,25 @@ public class PostService {
      * [Delete]
      */
     @Transactional
-    public void deletePost(Long postId, Long userId) {
+    public void deletePost(Long postId, CustomUserDetails userDetails) {
 
         // userId null 체크
-        if (userId == null) {
+        if (userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
         }
 
         // 게시글 생성 및 예외처리
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new PostNotFoundException());
+                .orElseThrow(PostNotFoundException::new);
 
         // 작성자 확인
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getUserId().equals(userDetails.getUserId())) {
             throw new PostAccessDeniedException();
         }
 
         postRepository.delete(post);
     }
+
 
 }
 

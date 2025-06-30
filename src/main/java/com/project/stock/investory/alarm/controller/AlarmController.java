@@ -34,31 +34,30 @@ public class AlarmController {
     // 해당 유저에게 알람 보내기
     @GetMapping("/sse")
     public SseEmitter streamSse(@AuthenticationPrincipal CustomUserDetails userDetails) {
-
-
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(60*60*1000L); // 5분 타임아웃
 
         alarmService.subscribe(userDetails).subscribe(alarm -> {
             try {
-                System.out.println("알림 전송 시도: " + alarm.getContent());
-                emitter.send(SseEmitter.event()
-                        .name("alarm")
-                        .data(alarm));
+                emitter.send(SseEmitter.event().name("alarm").data(alarm));
             } catch (Exception e) {
-                System.err.println("알림 전송 실패: " + e.getMessage());
                 emitter.completeWithError(e);
-                e.printStackTrace(); // 콘솔에 자세한 예외 출력
+                // 연결 끊어지면 구독 해제
+                alarmService.unsubscribe(userDetails);
             }
         });
+
+        emitter.onCompletion(() -> alarmService.unsubscribe(userDetails));
+        emitter.onTimeout(() -> alarmService.unsubscribe(userDetails));
+        emitter.onError(e -> alarmService.unsubscribe(userDetails));
 
         return emitter;
     }
 
-//    // 로그아웃 시 subjectMap에서 제거
-//    @DeleteMapping("/unsubscribe/{userId}")
-//    public void unsubscribe(@PathVariable Long userId) {
-//        alarmService.unsubscribe(userId);
-//    }
+    // 로그아웃 시 subjectMap에서 제거
+    @DeleteMapping("/unsubscribe/{userId}")
+    public void unsubscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        alarmService.unsubscribe(userDetails);
+    }
 
     // 유저의 알람 모두 읽음 표시
     @PutMapping("/read-all")

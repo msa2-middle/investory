@@ -2,6 +2,7 @@ package com.project.stock.investory.post.controller;
 
 import com.project.stock.investory.post.dto.PostDto;
 import com.project.stock.investory.post.dto.PostRequestDto;
+import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.service.PostService;
 import com.project.stock.investory.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,8 +29,8 @@ public class PostController {
     public ResponseEntity<PostDto> createPost(@PathVariable String stockId,
                                               @RequestBody PostRequestDto request,
                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        PostDto post = postService.createPost(stockId, request, userId);
+
+        PostDto post = postService.createPost(stockId, request, userDetails);
         return ResponseEntity.ok(post);
     }
 
@@ -49,14 +50,23 @@ public class PostController {
         return ResponseEntity.ok(postDto);
     }
 
+
+    // postId로 작성자 이름 찾기
+    @Operation(summary = "postId로 작성자 이름 찾기")
+    @GetMapping("/community/posts/author/{postId}")
+    public ResponseEntity<PostWithAuthorDto> getPost(@PathVariable Long postId) {
+        PostWithAuthorDto dto = postService.getPostWithAuthor(postId);
+        return ResponseEntity.ok(dto);
+    }
+
     // 개시글 수정
     @Operation(summary = "게시글 수정 ")
     @PatchMapping("/community/posts/{postId}")
     public ResponseEntity<PostDto> updatePost(@PathVariable Long postId,
                                               @RequestBody PostRequestDto request,
                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        PostDto post = postService.updatePost(postId, request, userId);
+
+        PostDto post = postService.updatePost(postId, request, userDetails);
         return ResponseEntity.ok(post);
     }
 
@@ -65,8 +75,8 @@ public class PostController {
     @DeleteMapping("/community/posts/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable Long postId,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        postService.deletePost(postId, userId);
+
+        postService.deletePost(postId, userDetails);
         return ResponseEntity.noContent().build();
     }
 }

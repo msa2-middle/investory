@@ -57,6 +57,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/stock/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/stock/*/analytics/**").permitAll()
 
+                        // 🔹 SSE 스트림 엔드포인트 공개 (추가)
+                        .requestMatchers(HttpMethod.GET, "/api/stock/*/stream").permitAll()
+
                         // community posts 조회 공개
                         .requestMatchers(HttpMethod.GET, "/community/posts/**").permitAll()
 

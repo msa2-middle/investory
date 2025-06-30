@@ -49,12 +49,19 @@ public class Comment {
     private Integer likeCount;
 
     // 작성일
+//    @CreatedDate
+//    @Column(name = "created_at")
+//    private LocalDateTime createdAt;
+//
+//    @LastModifiedDate
+//    @Column(name = "updated_at")
+//    private LocalDateTime updatedAt;
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     @CreationTimestamp
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist
