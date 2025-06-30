@@ -1,5 +1,6 @@
 package com.project.stock.investory.stockInfo.controller;
 
+
 import com.project.stock.investory.stockInfo.service.StockWebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ public class StockStreamController {
      * 사용법: GET /stock/{stockId}/price
      * 예: GET /stock/005930/price (삼성전자)
      */
-    @GetMapping("/{stockId}/realTimeprice")
+    @GetMapping(value = "/{stockId}/realTimeprice", produces = "text/event-stream")
     public ResponseEntity<SseEmitter> getStockPrice(@PathVariable String stockId) {
 
         log.info("실시간 주식 가격 요청: {}", stockId);
