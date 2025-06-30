@@ -23,7 +23,7 @@ public class StockStreamController {
      * 사용법: GET /stock/{stockId}/price
      * 예: GET /stock/005930/price (삼성전자)
      */
-    @GetMapping("/{stockId}/realTimeprice")
+    @GetMapping(value = "/{stockId}/realTimeprice", produces = "text/event-stream")
     public ResponseEntity<SseEmitter> getStockPrice(@PathVariable String stockId) {
 
         log.info("실시간 주식 가격 요청: {}", stockId);
