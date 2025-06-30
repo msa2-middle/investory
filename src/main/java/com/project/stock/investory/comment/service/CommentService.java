@@ -79,7 +79,7 @@ public class CommentService {
                 .type(AlarmType.COMMENT)
                 .build();
 
-        alarmService.createAlarm(alarmRequest, user.getUserId());
+        alarmService.createAlarm(alarmRequest, userPost.getUserId()); // 게시글 작성자에게 보내기
 
         return CommentResponseDTO
                 .builder()
