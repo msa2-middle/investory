@@ -71,8 +71,8 @@ public class StockPriceController {
     }
 
 
-    // 100개 가격 가져오기
-    @Operation(summary = "100개 가격 가져오기")
+    // get 특정 종목 100개 가격 데이터
+    @Operation(summary = "get 특정 종목 100개 가격 데이터 ")
     @GetMapping("/api/{stockId}/history")
     public List<StockPriceHistoryDto> getStockPriceHistory(
             @PathVariable String stockId,
@@ -83,8 +83,8 @@ public class StockPriceController {
     }
 
 
-    // 가격 데이터 조회 및 save
-    @Operation(summary = "가격 데이터 조회 및 save")
+    // 특정 종목 가격 데이터 조회 및 save
+    @Operation(summary = "특정 종목 가격 데이터 조회 및 save")
     @PostMapping("/save/{stockId}")
     public ResponseEntity<String> fetchAndSaveStockPriceHistory(
             @PathVariable String stockId,
@@ -93,17 +93,6 @@ public class StockPriceController {
         System.out.println("API 호출 시작: stockId=" + stockId + ", period=" + period); // 요청 시작 로그
 
         try {
-//            // 1. API에서 데이터 받아오기
-//            List<StockPriceHistoryDto> dtoList = stockPriceHistoryService.getStockPriceHistory(stockId, period);
-//
-//            if (dtoList == null || dtoList.isEmpty()) {
-//                System.out.println("API로부터 받아온 데이터가 없거나 비어 있습니다. 저장 작업을 건너뜜.");
-//                return new ResponseEntity<>("데이터를 찾을 수 없거나 비어있어 저장하지 않았습니다.", HttpStatus.NOT_FOUND); // 404 응답
-//            }
-//
-//            System.out.println("API로부터 " + dtoList.size() + "개의 데이터 수신: " + dtoList); // 수신 데이터 로그
-
-            // 2. 저장 서비스 호출
             stockPriceSaveService.saveAll(stockId, period);
             System.out.println("데이터베이스 저장 완료."); // 저장 완료 로그
 
@@ -121,6 +110,8 @@ public class StockPriceController {
     }
 
 
+    // 여러 티커 가져와서 가격 데이터 저장
+    @Operation(summary = "여러 티커 가져와서 가격 데이터 저장")
     @PostMapping("/save/all")
     public String saveAllTicker(@RequestParam String period) {
         try {
