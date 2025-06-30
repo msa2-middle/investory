@@ -23,5 +23,14 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/static/**")
                 .addResourceLocations("classpath:/static/");
     }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173")
+                .allowedMethods("*")
+                .allowedHeaders("*")
+                .allowCredentials(true);
+    }
 }
 
