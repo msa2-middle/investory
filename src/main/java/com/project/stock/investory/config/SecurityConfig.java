@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/users/signup", "/users/login", "/oauth2/**", "/alarm/**",
                                 "/users/password-reset/send-code",
                                 "/users/password-reset/verify-code",
-                                "/users/password-reset/reset"
+                                "/users/password-reset/reset",
+                                "/users/refresh"
                         ).permitAll()
 
                         // stock 관련 GET 요청은 전체 공개

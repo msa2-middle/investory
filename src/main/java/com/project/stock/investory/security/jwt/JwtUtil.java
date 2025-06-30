@@ -14,6 +14,8 @@ public class JwtUtil {
 
     private final Key key; // JWT 서명(Signature)용 비밀키
     private static final long EXPIRATION_MS = 1000 * 60 * 60; // 1시간
+    // RefreshToken 만료 기간
+    private static final long REFRESH_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 14;
 
     // application.properties에서 jwt.secret 값을 주입받음
     public JwtUtil(@Value("${jwt.secret}") String secretKey) {
@@ -70,5 +72,20 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public String generateRefreshToken(Long userId, String email, String name) {
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .claim("email", email)
+                .claim("name", name)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION_MS))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return validateToken(token);
     }
 }
