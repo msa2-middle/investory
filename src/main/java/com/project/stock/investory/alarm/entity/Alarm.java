@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Alarm {
 
@@ -41,12 +44,20 @@ public class Alarm {
     private Integer isRead;
 
 
-    @CreatedDate
-    @Column(name = "created_at")
+//    @CreatedDate
+//    @Column(name = "created_at")
+//    private LocalDateTime createdAt;
+//
+//    @LastModifiedDate
+//    @Column(name = "updated_at")
+//    private LocalDateTime updatedAt;
+
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -54,14 +65,6 @@ public class Alarm {
         if (isRead == null) {
             isRead = 0;  // 기본값 0으로 셋팅
         }
-    }
-
-
-    @Builder
-    public Alarm(String content, User user, AlarmType type) {
-        this.content = content;
-        this.user = user;
-        this.type = type;
     }
 
     public void updateAlarmIsRead() {

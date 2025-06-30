@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -39,6 +40,8 @@ public class  AlarmService {
                 .user(user)
                 .content(dto.getContent())
                 .type(dto.getType())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         Alarm saved = alarmRepository.save(alarm);
         rxSubjectManager.emit(user.getUserId(), saved);
