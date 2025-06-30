@@ -68,18 +68,20 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                .builder()
-                .content(userPost.getName()
-                        + "님의 "
-                        + post.getTitle()
-                        + " 게시글에 "
-                        + user.getName()
-                        + " 님이 댓글을 남겼습니다.")
-                .type(AlarmType.COMMENT)
-                .build();
+        if (!userPost.getUserId().equals(comment.getUser().getUserId())) {
+            AlarmRequestDTO alarmRequest = AlarmRequestDTO
+                    .builder()
+                    .content(userPost.getName()
+                            + "님의 "
+                            + post.getTitle()
+                            + " 게시글에 "
+                            + user.getName()
+                            + " 님이 댓글을 남겼습니다.")
+                    .type(AlarmType.COMMENT)
+                    .build();
 
-        alarmService.createAlarm(alarmRequest, userPost.getUserId()); // 게시글 작성자에게 보내기
+            alarmService.createAlarm(alarmRequest, userPost.getUserId()); // 게시글 작성자에게 보내기
+        }
 
         return CommentResponseDTO
                 .builder()

@@ -60,18 +60,20 @@ public class CommentLikeService {
             comment.updateCommentLike(newLikeCount);
             isLiked = true;
 
-            AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                    .builder()
-                    .content(comment.getUser().getName()
-                            + "님의 "
-                            + comment.getContent()
-                            + " 댓글에 "
-                            + user.getName()
-                            + " 님이 좋아요를 남겼습니다.")
-                    .type(AlarmType.COMMENT)
-                    .build();
+            if (!user.getUserId().equals(comment.getUser().getUserId())) {
+                AlarmRequestDTO alarmRequest = AlarmRequestDTO
+                        .builder()
+                        .content(comment.getUser().getName()
+                                + "님의 "
+                                + comment.getContent()
+                                + " 댓글에 "
+                                + user.getName()
+                                + " 님이 좋아요를 남겼습니다.")
+                        .type(AlarmType.COMMENT)
+                        .build();
 
-            alarmService.createAlarm(alarmRequest, comment.getUser().getUserId()); // 댓글 작성자에게 보내기
+                alarmService.createAlarm(alarmRequest, comment.getUser().getUserId()); // 댓글 작성자에게 보내기
+            }
         }
 
         commentRepository.save(comment);
