@@ -73,4 +73,8 @@ public class User {
         this.refreshToken = null;
     }
 
+    public void enableSocialLogin() {
+        this.isSocial = 1;
+    }
+
 }
