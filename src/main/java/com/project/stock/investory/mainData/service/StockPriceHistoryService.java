@@ -64,10 +64,10 @@ public class StockPriceHistoryService {
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice")
                         .queryParam("fid_cond_mrkt_div_code", "J") // J: 주식
-                        .queryParam("fid_input_iscd", stockId) // J: 주식
-                        .queryParam("fid_input_date_1", "20220101") // J: 주식
+                        .queryParam("fid_input_iscd", stockId)
+                        .queryParam("fid_input_date_1", "20220101") // 가장 과거 데이터 하한 설정
                         .queryParam("fid_input_date_2", period)
-                        .queryParam("fid_period_div_code", "D")
+                        .queryParam("fid_period_div_code", "W") //  (D:일봉, W:주봉, M:월봉, Y:년봉)
                         .queryParam("fid_org_adj_prc", "1")
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))

@@ -26,7 +26,7 @@ public class StockPriceHistory {
     private String stockId;
 
     // 거래일자 (DATE 타입)
-    @Column(name = "trade:date", nullable = false)
+    @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
 
     // 시가

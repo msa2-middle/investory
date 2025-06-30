@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/stock/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/stock/*/analytics/**").permitAll()
 
+                        // stock save api - test code
+                        .requestMatchers(HttpMethod.POST, "/stock/save/**").permitAll()
+
                         // 🔹 SSE 스트림 엔드포인트 공개 (추가)
                         .requestMatchers(HttpMethod.GET, "/api/stock/*/stream").permitAll()
 
