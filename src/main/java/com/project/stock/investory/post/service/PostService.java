@@ -73,6 +73,8 @@ public class PostService {
      * [Read]
      * 1. stock_id에 해당하는 모든 post를 read
      * 2. post_id의 개별 post 조회(1번 메서드를 통해 화면 상 특정 stock_id의 글들만 나타남)
+     * 3. 게시글 상세 조회
+     * 4. like_count(게시글 좋아요) 조회
      */
     // 1. stock_id에 해당하는 모든 post를 read
     @Transactional(readOnly = true)
@@ -97,6 +99,11 @@ public class PostService {
     public PostWithAuthorDto getPostWithAuthor(Long postId) {
         return postRepository.findPostWithAuthorById(postId)
                 .orElseThrow(PostNotFoundException::new);
+    }
+
+    // 4. like_count(게시글 좋아요) 조회
+    public long getLikeCount(Long postId) {
+        return postRepository.countLikesByPostId(postId);
     }
 
     // mapping util method

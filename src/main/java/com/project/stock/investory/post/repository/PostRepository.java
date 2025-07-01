@@ -21,6 +21,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // Board가 Post에서 @ManyToOne으로 연결되어 있으므로 Board 엔티티 내부의 stockId 사용 가능
     Optional<Post> findByPostIdAndBoard_StockId(Long postId, String stockId);
 
+    // get post_like
+    @Query("SELECT p.likeCount FROM Post p WHERE p.postId = :postId")
+    long countLikesByPostId(@Param("postId") Long postId);
+
     // 좋아요 수 1 증가 (원자적 연산)
     @Modifying // JPA에게 데이터 변경 쿼리임을 알림
     @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.postId = :postId")

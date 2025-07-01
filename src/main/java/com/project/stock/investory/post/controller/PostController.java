@@ -59,6 +59,14 @@ public class PostController {
         return ResponseEntity.ok(dto);
     }
 
+    // get 게시글 좋아요 개수
+    @Operation(summary = "get 게시글 좋아요 개수")
+    @GetMapping("/community/posts/likes/{postId}")
+    public ResponseEntity<Long> getPostLikeCount(@PathVariable Long postId) {
+        long count = postService.getLikeCount(postId);
+        return ResponseEntity.ok(count);
+    }
+
     // 개시글 수정
     @Operation(summary = "게시글 수정 ")
     @PatchMapping("/community/posts/{postId}")
