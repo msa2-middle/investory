@@ -24,7 +24,7 @@ public class StockSearchController {
     @GetMapping("/search")
     public ResponseEntity<List<Stock>> searchStocks(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "100") int limit
     ) {
         List<Stock> stocks = stockService.searchStocks(keyword);
         return ResponseEntity.ok(stocks.stream().limit(limit).collect(Collectors.toList()));
