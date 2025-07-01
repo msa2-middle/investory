@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -52,9 +54,17 @@ public class StockAlertSetting {
     @Column(nullable = false)
     private Integer isActive;
 
-    @CreatedDate
-    @Column(name = "created_at")
+//    @CreatedDate
+//    @Column(name = "created_at")
+//    private LocalDateTime createdAt;
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
 
     public void updateSetting(int targetPrice, ConditionType condition) {
         if (targetPrice <= 0) {

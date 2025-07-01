@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -61,6 +62,8 @@ public class StockAlertSettingService {
                         .stock(stock)
                         .targetPrice(request.getTargetPrice())
                         .condition(request.getCondition())
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
                         .build();
 
         StockAlertSetting savedStockAlertSetting = stockAlertSettingRepository.save(stockAlertSetting);
@@ -101,6 +104,7 @@ public class StockAlertSettingService {
                         .stockId(setting.getStock().getStockId())
                         .targetPrice(setting.getTargetPrice())
                         .condition(setting.getCondition())
+                        .createdAt(setting.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -124,6 +128,7 @@ public class StockAlertSettingService {
                 .stockId(setting.getStock().getStockId())
                 .targetPrice(setting.getTargetPrice())
                 .condition(setting.getCondition())
+                .createdAt(setting.getCreatedAt())
                 .build();
     }
 

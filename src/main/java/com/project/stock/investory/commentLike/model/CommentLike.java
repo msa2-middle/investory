@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -35,8 +36,11 @@ public class CommentLike {
     @JoinColumn(name = "comment_id", nullable = false)
     private Comment comment;
 
-    @CreatedDate
-    @Column(name = "created_at")
+//    @CreatedDate
+//    @Column(name = "created_at")
+//    private LocalDateTime createdAt;
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
 }
