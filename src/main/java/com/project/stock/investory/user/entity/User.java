@@ -36,6 +36,9 @@ public class User {
     @Builder.Default
     private Integer isSocial = 0;  // 소셜 로그인 여부 (0: 일반, 1: 소셜)
 
+    @Column(name = "refresh_token", length = 512, nullable = true)
+    private String refreshToken; // 리프레시 토큰
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 가입일 (자동 생성)
@@ -60,6 +63,14 @@ public class User {
     // 탈퇴 처리 (soft delete)
     public void withdraw() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
     }
 
 }

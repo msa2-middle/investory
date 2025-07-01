@@ -33,6 +33,14 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    // 토큰 재발급
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenRefreshResponseDto> refresh(@RequestBody RefreshTokenRequestDto request) {
+        TokenRefreshResponseDto response = userService.refreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+
     // 마이페이지 - 회원정보 조회
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getMyPage(@AuthenticationPrincipal CustomUserDetails userDetails) {

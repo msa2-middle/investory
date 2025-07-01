@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,5 +19,6 @@ public class StockAlertSettingResponseDTO {
     private String stockId;
     private int targetPrice;
     private ConditionType condition;
+    private LocalDateTime createdAt;
 
 }

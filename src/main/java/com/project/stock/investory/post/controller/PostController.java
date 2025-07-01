@@ -29,8 +29,8 @@ public class PostController {
     public ResponseEntity<PostDto> createPost(@PathVariable String stockId,
                                               @RequestBody PostRequestDto request,
                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        PostDto post = postService.createPost(stockId, request, userId);
+
+        PostDto post = postService.createPost(stockId, request, userDetails);
         return ResponseEntity.ok(post);
     }
 
@@ -65,8 +65,8 @@ public class PostController {
     public ResponseEntity<PostDto> updatePost(@PathVariable Long postId,
                                               @RequestBody PostRequestDto request,
                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        PostDto post = postService.updatePost(postId, request, userId);
+
+        PostDto post = postService.updatePost(postId, request, userDetails);
         return ResponseEntity.ok(post);
     }
 
@@ -75,8 +75,8 @@ public class PostController {
     @DeleteMapping("/community/posts/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable Long postId,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long userId = userDetails.getUserId();
-        postService.deletePost(postId, userId);
+
+        postService.deletePost(postId, userDetails);
         return ResponseEntity.noContent().build();
     }
 }

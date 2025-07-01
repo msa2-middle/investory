@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -99,7 +100,7 @@ public class UserService {
     }
 
     // 로그인
-    @Transactional(readOnly = true)
+    @Transactional
     public UserLoginResponseDto login(UserLoginRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(UserNotFoundException::new);
@@ -116,16 +117,50 @@ public class UserService {
             throw new InvalidPasswordException();
         }
 
-        // 로그인 성공 → JWT 토큰 발급
-        String token = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
+        // AccessToken 생성
+        String accessToken  = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
+
+        // RefreshToken 생성
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName());
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
 
         return UserLoginResponseDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .name(user.getName())
-                .accessToken(token)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
+
+    @Transactional
+    public TokenRefreshResponseDto refreshToken(String refreshToken) {
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // DB에 저장된 refreshToken과 비교
+        if (!refreshToken.equals(user.getRefreshToken())) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        String newAccessToken = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName());
+
+        user.updateRefreshToken(newRefreshToken);
+
+        return TokenRefreshResponseDto.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
+    }
+
 
     // 내 정보 조회 (마이페이지 조회)
     @Transactional(readOnly = true)
@@ -208,6 +243,7 @@ public class UserService {
                 .map(post -> PostSimpleResponseDto.builder()
                         .postId(post.getPostId())
                         .title(post.getTitle())
+                        .createdAt(post.getCreatedAt())
                         .build())
                 .toList();
     }
@@ -221,6 +257,7 @@ public class UserService {
                 .map(like -> PostSimpleResponseDto.builder()
                         .postId(like.getPost().getPostId())
                         .title(like.getPost().getTitle())
+                        .createdAt(like.getCreatedAt())
                         .build())
                 .toList();
     }
@@ -234,6 +271,7 @@ public class UserService {
                 .map(comment -> CommentSimpleResponseDto.builder()
                         .commentId(comment.getCommentId())
                         .content(comment.getContent())
+                        .createdAt(comment.getCreatedAt())
                         .build())
                 .toList();
     }
@@ -247,6 +285,7 @@ public class UserService {
                 .map(like -> CommentSimpleResponseDto.builder()
                         .commentId(like.getComment().getCommentId())
                         .content(like.getComment().getContent())
+                        .createdAt(like.getComment().getCreatedAt())
                         .build())
                 .toList();
     }
