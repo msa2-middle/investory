@@ -23,11 +23,12 @@ public class JwtUtil {
     }
 
     // 토큰 생성 (userId, email, name 포함)
-    public String generateToken(Long userId, String email, String name) {
+    public String generateToken(Long userId, String email, String name, String role) {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId)) // 사용자 ID
                 .claim("email", email)              // 이메일 추가 정보
                 .claim("name", name)        // 이름 추가 정보
+                .claim("role", role)
                 .setIssuedAt(new Date())            // 발급 시간
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS)) // 만료 시간
                 .signWith(key, SignatureAlgorithm.HS256) // 서명
@@ -74,11 +75,12 @@ public class JwtUtil {
                 .getBody();
     }
 
-    public String generateRefreshToken(Long userId, String email, String name) {
+    public String generateRefreshToken(Long userId, String email, String name, String role) {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("email", email)
                 .claim("name", name)
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -88,4 +90,10 @@ public class JwtUtil {
     public boolean validateRefreshToken(String token) {
         return validateToken(token);
     }
+
+    public String getRoleFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("role", String.class);
+    }
+
 }

@@ -3,6 +3,7 @@ package com.project.stock.investory.security;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -15,11 +16,11 @@ public class CustomUserDetails implements UserDetails {
     private final Long userId;
     private final String email;
     private final String name;
+    private final String role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // 모든 사용자 ROLE_USER만 부여
-        return Collections.singleton(() -> "ROLE_USER");
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_" + this.role));
     }
 
     @Override
