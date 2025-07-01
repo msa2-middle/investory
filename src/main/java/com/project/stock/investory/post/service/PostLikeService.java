@@ -5,10 +5,7 @@ import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
-import com.project.stock.investory.post.exception.AuthenticationRequiredException;
-import com.project.stock.investory.post.exception.PostLikeDuplicatedException;
-import com.project.stock.investory.post.exception.PostNotFoundException;
-import com.project.stock.investory.post.exception.UserNotFoundException;
+import com.project.stock.investory.post.exception.*;
 import com.project.stock.investory.post.repository.PostLikeRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.security.CustomUserDetails;
@@ -50,6 +47,11 @@ public class PostLikeService {
         User userPost = userRepository.findById(post.getUserId())
                 .orElseThrow(UserNotFoundException::new); // 예외처리
 
+        // 자신의 글인지 확인
+        if (post.getUserId().equals(user.getUserId())) {
+            throw new SelfLikeNotAllowedException();
+        }
+
         // PostLike 객체 생성
         PostLike postLike = new PostLike(post, user);
 
@@ -71,7 +73,7 @@ public class PostLikeService {
                 .type(AlarmType.COMMENT)
                 .build();
 
-        alarmService.createAlarm(alarmRequest, user.getUserId());
+        alarmService.createAlarm(alarmRequest, post.getUserId());
     }
 
     // 좋아요 해제
