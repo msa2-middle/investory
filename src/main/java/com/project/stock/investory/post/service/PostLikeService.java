@@ -116,6 +116,7 @@ public class PostLikeService {
     }
 
 
+    // 좋아요를 했는지 여부 확인
     public boolean hasUserLiked(CustomUserDetails userDetails, Long postId) {
 
         // userId null 체크

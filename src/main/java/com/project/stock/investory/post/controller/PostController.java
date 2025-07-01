@@ -46,6 +46,10 @@ public class PostController {
     @Operation(summary = "개별 게시글 조회")
     @GetMapping("/community/posts/{postId}")
     public ResponseEntity<PostDto> getPostById(@PathVariable Long postId) {
+        // 1. view_count(조회수) 증가
+        postService.getPostAndIncreaseView(postId);
+
+        // 2. 엔티티 → DTO 변환
         PostDto postDto = postService.getPostById(postId);
         return ResponseEntity.ok(postDto);
     }
@@ -64,6 +68,14 @@ public class PostController {
     @GetMapping("/community/posts/likes/{postId}")
     public ResponseEntity<Long> getPostLikeCount(@PathVariable Long postId) {
         long count = postService.getLikeCount(postId);
+        return ResponseEntity.ok(count);
+    }
+
+    // get 게시글 조회수
+    @Operation(summary = "get 조회수")
+    @GetMapping("/community/posts/view-count/{postId}")
+    public ResponseEntity<Long> getPostViewCount(@PathVariable Long postId) {
+        long count = postService.getViewCount(postId);
         return ResponseEntity.ok(count);
     }
 

@@ -75,6 +75,7 @@ public class PostService {
      * 2. post_id의 개별 post 조회(1번 메서드를 통해 화면 상 특정 stock_id의 글들만 나타남)
      * 3. 게시글 상세 조회
      * 4. like_count(게시글 좋아요) 조회
+     * 5. view_count(조회수) 조회
      */
     // 1. stock_id에 해당하는 모든 post를 read
     @Transactional(readOnly = true)
@@ -106,6 +107,11 @@ public class PostService {
         return postRepository.countLikesByPostId(postId);
     }
 
+    // 5. view_count(조회수) 조회
+    public long getViewCount(Long postId) {
+        return postRepository.getViewCountByPostId(postId);
+    }
+
     // mapping util method
     private PostDto convertToDto(Post post) {
         return PostDto.builder()
@@ -124,6 +130,8 @@ public class PostService {
 
     /**
      * [Update]
+     * 1. 게시글 수정
+     * 2. 조회수 늘리기
      */
     @Transactional
     public PostDto updatePost(Long postId, PostRequestDto request, CustomUserDetails userDetails) {
@@ -152,6 +160,16 @@ public class PostService {
                 .build();
     }
 
+    // 조회수 늘리기
+    @Transactional
+    public Post getPostAndIncreaseView(Long postId) {
+        // 1. 조회수 증가
+        postRepository.incrementViewCount(postId);
+
+        // 2. 게시글 조회
+        return postRepository.findById(postId)
+                .orElseThrow(PostNotFoundException::new);
+    }
 
     /**
      * [Delete]
