@@ -60,9 +60,19 @@ public class User {
         this.password = encodedPassword;
     }
 
+    // 익명화 메서드 추가
+    public void anonymize() {
+        this.name = "탈퇴한 회원";
+        this.email = "withdrawn_" + this.userId + "@example.com";
+        this.phone = null;
+        this.password = null;
+        this.refreshToken = null;
+    }
+
     // 탈퇴 처리 (soft delete)
     public void withdraw() {
         this.deletedAt = LocalDateTime.now();
+        this.anonymize();
     }
 
     public void updateRefreshToken(String refreshToken) {
@@ -71,6 +81,10 @@ public class User {
 
     public void clearRefreshToken() {
         this.refreshToken = null;
+    }
+
+    public void enableSocialLogin() {
+        this.isSocial = 1;
     }
 
 }
