@@ -1,9 +1,12 @@
 package com.project.stock.investory.alarm.controller;
 
 import com.project.stock.investory.alarm.dto.AlarmResponseDTO;
+import com.project.stock.investory.alarm.exception.AuthenticationRequiredException;
 import com.project.stock.investory.alarm.service.AlarmService;
+import com.project.stock.investory.alarm.service.RxSubjectManager;
 import com.project.stock.investory.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +18,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/alarm")
 @RequiredArgsConstructor
+@Slf4j
 public class AlarmController {
 
     private final AlarmService alarmService;
+    private final RxSubjectManager rxSubjectManager; // 기존 이름 유지
 
     // 해당 유저가 가지고 있는 알람 가져오기 (기본 - 빠른 조회)
     @GetMapping("/storage")
@@ -33,33 +38,41 @@ public class AlarmController {
         return ResponseEntity.ok(alarms);
     }
 
-    // 해당 유저에게 알람 보내기 (SSE)
+    // 해당 유저에게 알람 보내기 (개선된 SSE)
     @GetMapping("/sse")
     public SseEmitter streamSse(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        SseEmitter emitter = new SseEmitter(60*60*1000L); // 1시간 타임아웃
+        if (userDetails == null || userDetails.getUserId() == null) {
+            throw new AuthenticationRequiredException();
+        }
 
-        alarmService.subscribe(userDetails).subscribe(alarm -> {
-            try {
-                emitter.send(SseEmitter.event().name("alarm").data(alarm));
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-                // 연결 끊어지면 구독 해제
-                alarmService.unsubscribe(userDetails);
-            }
-        });
+        log.info("SSE connection request from user: {}", userDetails.getUserId());
 
-        emitter.onCompletion(() -> alarmService.unsubscribe(userDetails));
-        emitter.onTimeout(() -> alarmService.unsubscribe(userDetails));
-        emitter.onError(e -> alarmService.unsubscribe(userDetails));
-
-        return emitter;
+        // 새로운 개선된 SSE 연결 생성 메서드 사용
+        return rxSubjectManager.createConnection(userDetails.getUserId());
     }
 
-    // 로그아웃 시 subjectMap에서 제거
+    // 로그아웃 시 subjectMap에서 제거 (기존 메서드명 유지)
     @DeleteMapping("/unsubscribe")
     public ResponseEntity<Map<String, String>> unsubscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        alarmService.unsubscribe(userDetails);
+        if (userDetails != null && userDetails.getUserId() != null) {
+            rxSubjectManager.unsubscribe(userDetails.getUserId()); // 기존 메서드 사용
+            log.info("User unsubscribed: {}", userDetails.getUserId());
+        }
+
         return ResponseEntity.ok(Map.of("status", "unsubscribed"));
+    }
+
+    // 클라이언트 heartbeat 응답 처리 (새로 추가)
+    @PostMapping("/heartbeat")
+    public ResponseEntity<Map<String, String>> handleHeartbeat(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails != null && userDetails.getUserId() != null) {
+            rxSubjectManager.updateUserHeartbeat(userDetails.getUserId());
+            log.debug("Heartbeat received from user: {}", userDetails.getUserId());
+        }
+
+        return ResponseEntity.ok(Map.of("status", "pong"));
     }
 
     // 유저의 알람 모두 읽음 표시
@@ -80,5 +93,21 @@ public class AlarmController {
     ) {
         AlarmResponseDTO dto = alarmService.readOneAlarm(userDetails, alarmId);
         return ResponseEntity.ok(dto);
+    }
+
+    // 관리자용 연결 상태 조회 (새로 추가)
+    @GetMapping("/admin/connections")
+    public ResponseEntity<Map<String, Object>> getConnectionStats() {
+        return ResponseEntity.ok(rxSubjectManager.getConnectionStats());
+    }
+
+    // 개발/테스트용 특정 사용자 연결 상태 조회 (새로 추가)
+    @GetMapping("/debug/user/{userId}/connections")
+    public ResponseEntity<Map<String, Object>> getUserConnectionInfo(@PathVariable Long userId) {
+        return ResponseEntity.ok(Map.of(
+                "userId", userId,
+                "connectionCount", rxSubjectManager.getUserConnectionCount(userId),
+                "activeSessions", rxSubjectManager.getActiveSessionsForUser(userId)
+        ));
     }
 }
