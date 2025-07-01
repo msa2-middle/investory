@@ -1,6 +1,7 @@
 package com.project.stock.investory.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.hibernate.annotations.NotFound;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.Map;
 
@@ -68,4 +70,23 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", "해당 데이터를 찾을 수 없습니다."));
     }
+
+
+    //404 : 존재하지 않는 경로
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<Map<String,String>> handleNotFound(NoHandlerFoundException e) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "요청하신 페이지를 찾을 수 없습니다."));
+    }
+
+    //500 : 알 수 없는 서버 오류
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
+        e.printStackTrace(); // 서버 로그 남겨두기
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "서버 내부 오류가 발생했습니다."));
+    }
+
 }
