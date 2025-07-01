@@ -21,6 +21,8 @@ import java.util.function.Consumer;
 
 /**
  * KIS 실시간(웹소켓) 커넥터 – subscribe once & fan-out
+ * <p>
+ * 한국투자증권(KIS)의 WebSocket에 연결하고, 특정 종목의 실시간 체결 데이터를 받아오는 클라이언트
  */
 @ClientEndpoint
 @Component
@@ -44,11 +46,15 @@ public class KisWebSocketClient {
     /* ------------------------------------------------------------------ */
     private final ObjectMapper om = new ObjectMapper();
     private final ReentrantLock connectionLock = new ReentrantLock();   // connect/close
-    private final ReentrantLock sendLock       = new ReentrantLock();   // sendText
+    private final ReentrantLock sendLock = new ReentrantLock();   // sendText
 
-    /** 서버에 실제 subscribe 되어 있는 종목 */
+    /**
+     * 서버에 실제 subscribe 되어 있는 종목
+     */
     private final Set<String> subscribed = ConcurrentHashMap.newKeySet();
-    /** 종목별 → Listener 목록 */
+    /**
+     * 종목별 → Listener 목록
+     */
     private final Map<String, CopyOnWriteArrayList<Consumer<RealTimeTradeDTO>>> listeners =
             new ConcurrentHashMap<>();
 
@@ -82,7 +88,9 @@ public class KisWebSocketClient {
     /* 외부 API – Service 쪽에서 호출                                      */
     /* ------------------------------------------------------------------ */
 
-    /** “한 번만” subscribe – 같은 종목이 여러 번 들어와도 서버엔 1패킷만 전송 */
+    /**
+     * “한 번만” subscribe – 같은 종목이 여러 번 들어와도 서버엔 1패킷만 전송
+     */
     public void queueSubscribe(String stockId, Consumer<RealTimeTradeDTO> handler) {
         listeners.computeIfAbsent(stockId, k -> new CopyOnWriteArrayList<>()).add(handler);
 
@@ -94,7 +102,9 @@ public class KisWebSocketClient {
         }
     }
 
-    /** 모든 listener 가 빠지면 unsubscribe */
+    /**
+     * 모든 listener 가 빠지면 unsubscribe
+     */
     public void queueUnsubscribe(String stockId) {
         listeners.remove(stockId);
 
@@ -180,7 +190,10 @@ public class KisWebSocketClient {
         CompletableFuture.runAsync(() -> {
             if (!isSessionOpen()) {
                 asyncConnect();
-                try { Thread.sleep(300); } catch (InterruptedException ignored) {}
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException ignored) {
+                }
             }
             task.run();
         });
@@ -198,10 +211,23 @@ public class KisWebSocketClient {
 
     private String buildPayload(String trType, String stockId) {
         return """
-               {"header":{"approval_key":"%s","custtype":"P","tr_type":"%s",
-               "content-type":"utf-8","tr_id":"H0NXCNT0","tr_key":"%s"},
-               "body":{"input":{"tr_id":"H0NXCNT0","tr_key":"%s"}}}
-               """.replace("\n", "")
+                {
+                  "header": {
+                    "approval_key": "%s",
+                    "custtype":    "P",
+                    "tr_type":     "%s",
+                    "content-type":"utf-8",
+                    "tr_id":       "H0NXCNT0",
+                    "tr_key":      "%s"
+                  },
+                  "body": {
+                    "input": {
+                      "tr_id":  "H0NXCNT0",
+                      "tr_key": "%s"
+                    }
+                  }
+                }
+                """.replace("\n", "")      // 필요하면 개행 제거
                 .formatted(approvalKey, trType, stockId, stockId);
     }
 
@@ -262,8 +288,11 @@ public class KisWebSocketClient {
 
             RealTimeTradeDTO dto = RealTimeTradeDTO.from(f);
             list.forEach(cb -> {
-                try { cb.accept(dto); }
-                catch (Exception e) { log.warn("listener 예외", e); }
+                try {
+                    cb.accept(dto);
+                } catch (Exception e) {
+                    log.warn("listener 예외", e);
+                }
             });
 
         } catch (Exception e) {
@@ -279,7 +308,7 @@ public class KisWebSocketClient {
                 log.info("구독 성공 – {}", body.path("tr_key").asText(""));
             } else {
                 String code = body.path("msg_cd").asText();
-                String msg  = body.path("msg1").asText();
+                String msg = body.path("msg1").asText();
                 log.warn("❗ KIS 오류 ({}) {}", code, msg);
             }
         } catch (Exception e) {

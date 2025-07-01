@@ -17,6 +17,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 주식 실시간 체결 데이터를 KIS WebSocket 으로부터 받아
+ * 구독 중인 클라이언트(SSE) 들에게 전달(fan‑out)하는 서비스.
+ * 주요 책임
+ *
+ *   1. KIS 구독/해지 관리
+ *   2. SSE 연결(Emitter) 생성·보존·해제
+ *   3. 실시간 체결 데이터 fan‑out(전달)
+ *   4. 다중 스레드 환경에서 안전한 동시성 제어
+ */
 @Slf4j
 @Service
 public class StockWebSocketService {
@@ -24,9 +34,10 @@ public class StockWebSocketService {
     private final KisWebSocketClient kisClient;
     private final ObjectMapper om = new ObjectMapper();
 
+    //여러 스레드가 동시에 읽고 쓸 수 있게 하여 동시성 문제를 방지 : ConcurrentHashMap<>()
     private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
-    private final Set<String> subscribed = ConcurrentHashMap.newKeySet();
-    private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
+    private final Set<String> subscribed = ConcurrentHashMap.newKeySet(); // DTO 객체나 Map을 JSON 문자열로 변환해 SSE로 전송
+    private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>(); // 종목 코드(stockId)별로 구독 중인 SSE 연결들을 저장
 
     public StockWebSocketService(KisWebSocketClient kisClient) {
         this.kisClient = kisClient;
@@ -34,13 +45,10 @@ public class StockWebSocketService {
 
     public SseEmitter getStockPriceStream(String stockId) {
 
-
         // ① 장 외 시간이면 종료
         if (!StockMarketUtils.isTradingHours()) {
             return closedEmitter("marketClosed", "장 외 시간입니다.");
         }
-
-
 
         // ② 새 emitter 생성 (30분 timeout)
         SseEmitter emitter = new SseEmitter(TimeUnit.MINUTES.toMillis(30));
@@ -58,7 +66,7 @@ public class StockWebSocketService {
         // ④ 종료 콜백 등록
         emitter.onTimeout(() -> handleDisconnect(stockId, emitter));
         emitter.onCompletion(() -> handleDisconnect(stockId, emitter));
-        emitter.onError(e -> handleDisconnect(stockId, emitter));
+        emitter.onError(e -> removeEmitterOnly(stockId, emitter));
 
         sendEvent(emitter, "message", "connected"); // ✅ 추가
 
@@ -94,6 +102,9 @@ public class StockWebSocketService {
         }
     }
 
+    /**
+     * 즉시 종료되는 Emitter (장이 닫혀있을 때 등) 생성 유틸리티.
+     */
     private SseEmitter closedEmitter(String event, String msg) {
         SseEmitter emitter = new SseEmitter(0L);
         sendEvent(emitter, event, msg);
@@ -101,7 +112,10 @@ public class StockWebSocketService {
         return emitter;
     }
 
-    private void handleDisconnect(String stockId, SseEmitter emitter) {
+    /**
+     * onError 상황에서 emitter.complete() 는 호출하지 않고 목록 정리만 수행.
+     */
+    private void removeEmitterOnly(String stockId, SseEmitter emitter) {
         ReentrantLock lock = locks.computeIfAbsent(stockId, k -> new ReentrantLock());
         lock.lock();
         try {
@@ -109,6 +123,7 @@ public class StockWebSocketService {
             if (list != null) {
                 list.remove(emitter);
 
+                // 해당 종목을 구독 중인 Emitter 가 더 이상 없으면 자원 정리 & KIS 구독 해지
                 if (list.isEmpty()) {
                     emitters.remove(stockId);
                     if (subscribed.remove(stockId)) {
@@ -120,16 +135,25 @@ public class StockWebSocketService {
         } finally {
             lock.unlock();
         }
-
-        safeComplete(emitter);
+        // emitter.complete() 호출 없음 → AsyncRequestNotUsableException 방지
     }
 
+    /**
+     * timeout 또는 completion 이벤트에서 호출되어 emitter.complete() 까지 수행.
+     */
+    private void handleDisconnect(String stockId, SseEmitter emitter) {
+        removeEmitterOnly(stockId, emitter); // 목록 정리 재사용
+        safeComplete(emitter);              // complete() 호출은 여기서만
+    }
+
+    /**
+     * Emitter 를 안전하게 complete 처리. 이미 종료된 Emitter 에서 발생할 수 있는 예외를 흡수한다.
+     */
     private void safeComplete(SseEmitter emitter) {
         try {
             emitter.complete();
-        } catch (
-                IllegalStateException ignored) {
-            log.debug("Emitter already closed: {}", ignored.getMessage());
+        } catch (IllegalStateException ignored) {
+            log.debug("Emitter unusable: {}", ignored.getMessage());
         } catch (Exception ex) {
             log.warn("SSE complete error", ex);
         }
