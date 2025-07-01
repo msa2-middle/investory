@@ -228,14 +228,20 @@ public class UserService {
         user.changePassword(encoded);
     }
 
+
+
     // 회원 탈퇴 (soft delete)
     @Transactional
-    public void withdraw(CustomUserDetails userDetails) {
+    public void withdraw(CustomUserDetails userDetails, WithdrawRequestDto request) {
         User user = findActiveUser(userDetails.getUserId());
 
         // 이미 탈퇴한 사용자인 경우 예외 처리
         if (user.getDeletedAt() != null) {
             throw new UserWithdrawnException();
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new InvalidPasswordException();
         }
 
         user.withdraw();
