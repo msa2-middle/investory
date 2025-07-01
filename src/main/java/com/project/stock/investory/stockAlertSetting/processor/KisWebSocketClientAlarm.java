@@ -74,7 +74,7 @@ public class KisWebSocketClientAlarm {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("[RECEIVED] " + message);
+//        System.out.println("[RECEIVED] " + message);
 
         try {
             // 1. JSON 메시지일 경우 pass
@@ -116,7 +116,7 @@ public class KisWebSocketClientAlarm {
             // 4. JSON 출력
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonMessage);
-            System.out.println(json);
+//            System.out.println(json);
 
             // 1. JSON 문자열 파싱
             JsonNode root = objectMapper.readTree(json);
@@ -124,7 +124,7 @@ public class KisWebSocketClientAlarm {
             String stockCode = root.at("/data/stock_code").asText();
             int currentPrice = root.at("/data/current_price").asInt();
 
-            System.out.println(stockCode + "   " + currentPrice);
+//            System.out.println(stockCode + "   " + currentPrice);
 
             stockPriceProcessor.process(stockCode, currentPrice);
 
