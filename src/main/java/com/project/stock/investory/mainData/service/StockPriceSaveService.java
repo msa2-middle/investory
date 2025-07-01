@@ -59,21 +59,20 @@ public class StockPriceSaveService {
     public void saveAllTicker(String period) {
         List<RankDto> rankData = rankService.getRankData("5").block();
         int i = 0;
-
-        System.out.println("실행 start");
         long start = System.currentTimeMillis();
         if (rankData != null) {
             for (RankDto dto : rankData) {
 
                 String stockId = dto.getCode();
-                log.info("번호: {}, 종목: {}, 기준일자: {}", i, stockId, period);
                 i++;
+                log.info("번호: {}, 종목: {}, 기준일자: {}", i, stockId, period);
+
 
                 saveAll(stockId, period);
 
                 // sleep
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(1234);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     e.printStackTrace();
@@ -82,7 +81,7 @@ public class StockPriceSaveService {
         } // end if
 
         long end = System.currentTimeMillis();
-        System.out.println("실행 시간(ms): " + (end - start));
+        log.info("elapsed all time(ms): {}", (end - start));
     }
 
 
@@ -90,12 +89,14 @@ public class StockPriceSaveService {
     @Transactional
     public void saveAll(String stockId, String period) {
 
+        long start = System.currentTimeMillis();
+
         // API 조회를 시작할 현재 기간 (초기값은 initialPeriod)
         String currentApiPeriod = period;
 
         // 목표로 하는 최종 날짜 (2022년 1월 1일)
         // LocalDate.of(YYYY, MM, DD) 형태로 직접 LocalDate 객체를 생성합니다.
-        final LocalDate LAST_TARGET_DATE = LocalDate.of(2022, 1, 1);
+        final LocalDate LAST_TARGET_DATE = LocalDate.of(2010, 1, 1);
 
         boolean hasMoreDataFromApi = true; // API에서 더 가져올 데이터가 있는지 여부
 
@@ -160,6 +161,9 @@ public class StockPriceSaveService {
                 log.error("DB에서 가장 오래된 거래일 조회 실패. stockId: {}", stockId);
                 hasMoreDataFromApi = false;
             }
+
+            long end = System.currentTimeMillis();
+            log.info("elapsed time(ms): {}", (end - start));
 
         } while (hasMoreDataFromApi);
     }
