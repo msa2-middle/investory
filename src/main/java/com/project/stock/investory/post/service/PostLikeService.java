@@ -1,11 +1,11 @@
 package com.project.stock.investory.post.service;
 
+import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
+import com.project.stock.investory.alarm.entity.AlarmType;
+import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
-import com.project.stock.investory.post.exception.AuthenticationRequiredException;
-import com.project.stock.investory.post.exception.PostLikeDuplicatedException;
-import com.project.stock.investory.post.exception.PostNotFoundException;
-import com.project.stock.investory.post.exception.UserNotFoundException;
+import com.project.stock.investory.post.exception.*;
 import com.project.stock.investory.post.repository.PostLikeRepository;
 import com.project.stock.investory.post.repository.PostRepository;
 import com.project.stock.investory.security.CustomUserDetails;
@@ -24,6 +24,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final AlarmService alarmService;
 
     // 좋아요 표시
     @Transactional
@@ -42,6 +43,15 @@ public class PostLikeService {
         User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(UserNotFoundException::new);
 
+        // 게시글 작성자
+        User userPost = userRepository.findById(post.getUserId())
+                .orElseThrow(UserNotFoundException::new); // 예외처리
+
+        // 자신의 글인지 확인
+        if (post.getUserId().equals(user.getUserId())) {
+            throw new SelfLikeNotAllowedException();
+        }
+
         // PostLike 객체 생성
         PostLike postLike = new PostLike(post, user);
 
@@ -50,6 +60,20 @@ public class PostLikeService {
 
         // PostLike 저장
         postLikeRepository.save(postLike);
+
+        // 알람보내기
+        AlarmRequestDTO alarmRequest = AlarmRequestDTO
+                .builder()
+                .content(userPost.getName()
+                        + "님의 "
+                        + post.getTitle()
+                        + " 게시글에 "
+                        + user.getName()
+                        + " 님이 좋아요를 눌렀습니다.")
+                .type(AlarmType.COMMENT)
+                .build();
+
+        alarmService.createAlarm(alarmRequest, post.getUserId());
     }
 
     // 좋아요 해제
