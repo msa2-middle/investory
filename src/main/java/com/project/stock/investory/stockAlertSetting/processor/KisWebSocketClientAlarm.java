@@ -188,7 +188,7 @@ public class KisWebSocketClientAlarm {
                   },
                   "body": {
                     "input": {
-                        "tr_id": "H0STCNT0",
+                        "tr_id": "H0STASP0",
                         "tr_key": "005930"
                     }
                   }
@@ -204,12 +204,12 @@ public class KisWebSocketClientAlarm {
                     "custtype": "P",
                     "tr_type": "1",
                     "content-type": "utf-8",
-                    "tr_id": "H0STCNT0",
+                    "tr_id": "H0STASP0",
                     "tr_key": "%s"
                   },
                   "body": {
                     "input": {
-                      "tr_id": "H0STCNT0",
+                      "tr_id": "H0STASP0",
                       "tr_key": "%s"
                     }
                   }
