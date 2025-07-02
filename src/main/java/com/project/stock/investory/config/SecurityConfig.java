@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/community/posts/**").permitAll()
 
                         // 메인화면 전체 공개
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/main/**").permitAll()
 
                         // 알림 조회 공개
