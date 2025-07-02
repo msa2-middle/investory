@@ -66,9 +66,14 @@ public class UserService {
     public UserResponseDto signup(UserRequestDto request) {
 
         // 이메일 중복 확인
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new DuplicateEmailException();
-        }
+        userRepository.findByEmail(request.getEmail()).ifPresent(existingUser -> {
+            if (existingUser.getIsSocial() == 1) {
+                // 이미 소셜 계정으로 가입된 경우
+                throw new DuplicateSocialEmailException();
+            } else {
+                throw new DuplicateEmailException();
+            }
+        });
 
         // 비밀번호 복잡도 검사
         validatePasswordStrength(request.getPassword());
@@ -107,8 +112,8 @@ public class UserService {
 
         validateUserActive(user);
 
-        // 소셜 회원인데 비밀번호가 없는 경우 → 일반 로그인 차단
-        if (user.getPassword() == null || user.getIsSocial() == 1) {
+        // 소셜로만 가입했고, 비밀번호가 없는 경우에만 일반 로그인 차단
+        if (user.getPassword() == null) {
             throw new InvalidSocialUserException();
         }
 
@@ -200,14 +205,19 @@ public class UserService {
     public void updatePassword(CustomUserDetails userDetails, PasswordUpdateRequestDto request) {
         User user = findActiveUser(userDetails.getUserId());
 
-        // 소셜 로그인 사용자는 비밀번호 변경 불가
-        if (user.getIsSocial() == 1 || user.getPassword() == null) {
+        // 비밀번호가 없는 소셜-only 유저는 비밀번호 변경 불가
+        if (user.getPassword() == null) {
             throw new InvalidSocialUserException();
         }
 
         // 현재 비밀번호 검증
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new InvalidPasswordException();
+        }
+
+        // 새 비밀번호가 기존 비밀번호와 동일한지 검사
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new SamePasswordException();
         }
 
         // 새 비밀번호 복잡도 검사
@@ -218,14 +228,20 @@ public class UserService {
         user.changePassword(encoded);
     }
 
+
+
     // 회원 탈퇴 (soft delete)
     @Transactional
-    public void withdraw(CustomUserDetails userDetails) {
+    public void withdraw(CustomUserDetails userDetails, WithdrawRequestDto request) {
         User user = findActiveUser(userDetails.getUserId());
 
         // 이미 탈퇴한 사용자인 경우 예외 처리
         if (user.getDeletedAt() != null) {
             throw new UserWithdrawnException();
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new InvalidPasswordException();
         }
 
         user.withdraw();

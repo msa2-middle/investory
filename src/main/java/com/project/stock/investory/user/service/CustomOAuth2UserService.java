@@ -60,30 +60,39 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new AuthenticationServiceException("소셜 로그인에서 필수 정보 누락");
         }
 
-        // 이메일 기준으로 User 먼저 찾기
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .password(null)
-                            .name(name)
-                            .isSocial(1)
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .build();
-                    return userRepository.save(newUser);
-                });
+        // 이메일 기준으로 기존 유저 조회
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            // 기존 회원 없음 → 소셜 유저 새로 생성
+            user = User.builder()
+                    .email(email)
+                    .password(null) // 새 소셜 회원은 비밀번호 없음
+                    .name(name)
+                    .isSocial(1)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+        } else {
+            // 기존 회원 존재 → 소셜 연동 허용
+            if (user.getIsSocial() == 0) {
+                user.enableSocialLogin();
+            }
+        }
 
         // OAuthUser 테이블 중복 확인 후 없으면 저장
-        oAuthUserRepository.findByProviderAndProviderUserId(registrationId, providerUserId)
-                .orElseGet(() -> {
-                    OAuthUser oauthUser = OAuthUser.builder()
-                            .provider(registrationId)
-                            .providerUserId(providerUserId)
-                            .user(user)
-                            .build();
-                    return oAuthUserRepository.save(oauthUser);
-                });
+        boolean exists = oAuthUserRepository.findByProviderAndProviderUserId(registrationId, providerUserId)
+                .isPresent();
+
+        if (!exists) {
+            OAuthUser oauthUser = OAuthUser.builder()
+                    .provider(registrationId)
+                    .providerUserId(providerUserId)
+                    .user(user)
+                    .build();
+            oAuthUserRepository.save(oauthUser);
+        }
 
         Map<String, Object> extendedAttributes = new HashMap<>(attributes);
         extendedAttributes.put("email", email);

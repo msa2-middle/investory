@@ -2,6 +2,7 @@ package com.project.stock.investory.commentLike.service;
 
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.entity.AlarmType;
+import com.project.stock.investory.alarm.helper.AlarmHelper;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.comment.exception.CommentNotFoundException;
 import com.project.stock.investory.comment.model.Comment;
@@ -27,7 +28,7 @@ public class CommentLikeService {
     private final CommentLikeRepository commentLikeRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
-    private final AlarmService alarmService;
+    private final AlarmHelper alarmHelper;
 
     // 댓글 좋아요 토글 (좋아요/좋아요 취소)
     @Transactional
@@ -63,18 +64,10 @@ public class CommentLikeService {
             isLiked = true;
 
             if (!user.getUserId().equals(comment.getUser().getUserId())) {
-                AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                        .builder()
-                        .content(comment.getUser().getName()
-                                + "님의 "
-                                + comment.getContent()
-                                + " 댓글에 "
-                                + user.getName()
-                                + " 님이 좋아요를 남겼습니다.")
-                        .type(AlarmType.COMMENT)
-                        .build();
 
-                alarmService.createAlarm(alarmRequest, comment.getUser().getUserId()); // 댓글 작성자에게 보내기
+                alarmHelper.createCommentLikeAlarm(
+                        comment.getCommentId(),
+                        user, comment.getUser().getUserId(), comment.getPost().getPostId());
             }
         }
 

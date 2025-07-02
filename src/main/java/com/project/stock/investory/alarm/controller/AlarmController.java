@@ -1,22 +1,17 @@
 package com.project.stock.investory.alarm.controller;
 
-
 import com.project.stock.investory.alarm.dto.AlarmResponseDTO;
-import com.project.stock.investory.alarm.entity.Alarm;
 import com.project.stock.investory.alarm.service.AlarmService;
-
 import com.project.stock.investory.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
 
-//@Tag(name = "alarm controller api", description = "알람에 사용되는 API")
 @RestController
 @RequestMapping("/alarm")
 @RequiredArgsConstructor
@@ -24,17 +19,24 @@ public class AlarmController {
 
     private final AlarmService alarmService;
 
-    // 해당 유저가 가지고 있는 알람 가져오기
+    // 해당 유저가 가지고 있는 알람 가져오기 (기본 - 빠른 조회)
     @GetMapping("/storage")
-    public ResponseEntity<List<Alarm>> findAll(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<Alarm> alarms = alarmService.findAll(userDetails);
-        return ResponseEntity.ok(alarms); // 명시적으로 JSON 응답
+    public ResponseEntity<List<AlarmResponseDTO>> findAll(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<AlarmResponseDTO> alarms = alarmService.findAll(userDetails);
+        return ResponseEntity.ok(alarms);
     }
 
-    // 해당 유저에게 알람 보내기
+    // 상세 정보를 포함한 알람 조회 (연관 엔티티 정보 포함)
+    @GetMapping("/storage/details")
+    public ResponseEntity<List<AlarmResponseDTO>> findAllWithDetails(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<AlarmResponseDTO> alarms = alarmService.findAllWithDetails(userDetails);
+        return ResponseEntity.ok(alarms);
+    }
+
+    // 해당 유저에게 알람 보내기 (SSE)
     @GetMapping("/sse")
     public SseEmitter streamSse(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        SseEmitter emitter = new SseEmitter(60*60*1000L); // 5분 타임아웃
+        SseEmitter emitter = new SseEmitter(60*60*1000L); // 1시간 타임아웃
 
         alarmService.subscribe(userDetails).subscribe(alarm -> {
             try {
@@ -54,9 +56,10 @@ public class AlarmController {
     }
 
     // 로그아웃 시 subjectMap에서 제거
-    @DeleteMapping("/unsubscribe/{userId}")
-    public void unsubscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    @DeleteMapping("/unsubscribe")
+    public ResponseEntity<Map<String, String>> unsubscribe(@AuthenticationPrincipal CustomUserDetails userDetails) {
         alarmService.unsubscribe(userDetails);
+        return ResponseEntity.ok(Map.of("status", "unsubscribed"));
     }
 
     // 유저의 알람 모두 읽음 표시
@@ -69,7 +72,7 @@ public class AlarmController {
         ));
     }
 
-    // 유저의 알람 읽음 표시
+    // 유저의 특정 알람 읽음 표시
     @PutMapping("/read-one/{alarmId}")
     public ResponseEntity<AlarmResponseDTO> readOneAlarm(
             @PathVariable Long alarmId,
