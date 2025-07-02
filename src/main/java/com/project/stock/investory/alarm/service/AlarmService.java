@@ -16,18 +16,17 @@ import com.project.stock.investory.stockInfo.repository.StockRepository;
 import com.project.stock.investory.user.entity.User;
 import com.project.stock.investory.user.repository.UserRepository;
 import io.reactivex.rxjava3.core.Observable;
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AlarmService {
 
     private final AlarmRepository alarmRepository;
@@ -35,7 +34,7 @@ public class AlarmService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final StockRepository stockRepository;
-    private final RxSubjectManager rxSubjectManager;
+    private final RxSubjectManager rxSubjectManager; // 기존 이름 유지
 
     @Transactional
     public Alarm createAlarm(AlarmRequestDTO dto, Long userId) {
@@ -54,9 +53,11 @@ public class AlarmService {
 
         Alarm saved = alarmRepository.save(alarm);
 
+        // 기존 emit 메서드 사용 (호환성 유지)
         AlarmResponseDTO responseDTO = AlarmResponseDTO.from(saved);
         rxSubjectManager.emit(user.getUserId(), responseDTO);
 
+        log.info("Alarm created and sent to user: {}, alarmId: {}", userId, saved.getAlarmId());
         return saved;
     }
 
@@ -101,17 +102,17 @@ public class AlarmService {
     private Object getRelatedEntityInfo(Alarm alarm) {
         switch (alarm.getRelatedEntityType()) {
             case POST:
-                Long postId = Long.valueOf(alarm.getRelatedEntityId());  // String → Long 변환
+                Long postId = Long.valueOf(alarm.getRelatedEntityId());
                 return postRepository.findById(postId)
                         .map(PostSummaryDTO::from)
                         .orElse(null);
             case COMMENT:
-                Long commentId = Long.valueOf(alarm.getRelatedEntityId());  // String → Long 변환
+                Long commentId = Long.valueOf(alarm.getRelatedEntityId());
                 return commentRepository.findByCommentId(commentId)
                         .map(CommentSummaryDTO::from)
                         .orElse(null);
             case STOCK:
-                String stockId = alarm.getRelatedEntityId();  // String 그대로 사용
+                String stockId = alarm.getRelatedEntityId();
                 return stockRepository.findById(stockId)
                         .map(StockSummaryDTO::from)
                         .orElse(null);
@@ -128,19 +129,19 @@ public class AlarmService {
         switch (alarm.getRelatedEntityType()) {
             case POST:
                 if (entityClass == Post.class) {
-                    Long postId = Long.valueOf(alarm.getRelatedEntityId());  // String → Long 변환
+                    Long postId = Long.valueOf(alarm.getRelatedEntityId());
                     return (T) postRepository.findById(postId).orElse(null);
                 }
                 break;
             case COMMENT:
                 if (entityClass == Comment.class) {
-                    Long commentId = Long.valueOf(alarm.getRelatedEntityId());  // String → Long 변환
+                    Long commentId = Long.valueOf(alarm.getRelatedEntityId());
                     return (T) commentRepository.findByCommentId(commentId).orElse(null);
                 }
                 break;
             case STOCK:
                 if (entityClass == Stock.class) {
-                    String stockId = alarm.getRelatedEntityId();  // String 그대로 사용
+                    String stockId = alarm.getRelatedEntityId();
                     return (T) stockRepository.findById(stockId).orElse(null);
                 }
                 break;
@@ -148,6 +149,7 @@ public class AlarmService {
         return null;
     }
 
+    // 기존 메서드들 유지 (호환성)
     public Observable<AlarmResponseDTO> subscribe(CustomUserDetails userDetails) {
         return rxSubjectManager.getObservableForUser(userDetails.getUserId());
     }
@@ -167,11 +169,11 @@ public class AlarmService {
             return 0;
         }
 
-        alarms.forEach(alarm -> {
-            alarm.updateAlarmIsRead();
-            alarmRepository.save(alarm);
-        });
+        // 배치 업데이트 최적화
+        alarms.forEach(Alarm::updateAlarmIsRead);
+        alarmRepository.saveAll(alarms); // saveAll로 한번에 처리
 
+        log.info("Marked {} alarms as read for user: {}", alarms.size(), userDetails.getUserId());
         return alarms.size();
     }
 
@@ -184,9 +186,15 @@ public class AlarmService {
         Alarm alarm = alarmRepository.findByAlarmIdAndIsRead(alarmId, 0)
                 .orElseThrow(() -> new AlarmNotFoundException());
 
+        // 보안 검증: 해당 사용자의 알람인지 확인
+        if (!alarm.getUser().getUserId().equals(userDetails.getUserId())) {
+            throw new AlarmNotFoundException(); // 또는 권한 없음 예외
+        }
+
         alarm.updateAlarmIsRead();
         alarmRepository.save(alarm);
 
+        log.info("Marked alarm {} as read for user: {}", alarmId, userDetails.getUserId());
         return AlarmResponseDTO.from(alarm);
     }
 }

@@ -47,7 +47,7 @@ public class AlarmHelper {
                 commentRepository.findByPostPostIdAndCommentId(postId, commentId)
                         .orElseThrow(() -> new CommentNotFoundException()); // 예외처리
 
-        String targetUrl = "/post/detail/" + comment.getPost().getPostId();
+        String targetUrl = "/community/posts/" + comment.getPost().getPostId();
 
         AlarmRequestDTO dto = AlarmRequestDTO.forComment(
                 AlarmType.COMMENT_LIKE, content, targetUrl, commentId, liker);

@@ -35,7 +35,7 @@ public class StockAlertSettingService {
     private final StockRepository stockRepository;
     private final StockPriceProcessor stockPriceProcessor;
 
-    // 주가 알람 설정 생성
+    // 🔥 주가 알람 설정 생성 (수정됨)
     public StockAlertSettingResponseDTO create(String stockId, StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
 
         if (userDetails.getUserId() == null) {
@@ -68,8 +68,8 @@ public class StockAlertSettingService {
 
         StockAlertSetting savedStockAlertSetting = stockAlertSettingRepository.save(stockAlertSetting);
 
-        // 주가 알람 설정 생성 시 업데이트
-        stockPriceProcessor.updateStockAlertCondition(savedStockAlertSetting);
+        // 🔥 실시간 알람 조건 추가 (기존 updateStockAlertCondition을 addCondition으로 변경)
+        stockPriceProcessor.addCondition(savedStockAlertSetting);
 
         return StockAlertSettingResponseDTO
                 .builder()
@@ -121,7 +121,7 @@ public class StockAlertSettingService {
 
         StockAlertSetting setting =
                 stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId)
-                .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
 
         return StockAlertSettingResponseDTO.builder()
                 .userId(setting.getUser().getUserId())
@@ -132,7 +132,7 @@ public class StockAlertSettingService {
                 .build();
     }
 
-    // 특정 유저의 특정 주식 설정 수정
+    // 🔥 특정 유저의 특정 주식 설정 수정 (수정됨)
     // 얘는 마이페이지로 갈 기능이니까 굳이 다른 사람이 수정하거나 할 기회가 없으니 예외처리할 필요가 있을까..
     public StockAlertSettingResponseDTO updateSetting(
             CustomUserDetails userDetails, String stockId, StockAlertSettingUpdateRequestDTO request
@@ -146,7 +146,7 @@ public class StockAlertSettingService {
 
         StockAlertSetting setting =
                 stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId)
-                .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
 
         // 엔티티 내부 메서드로 상태 변경 (유효성 검증 포함)
         // null이 아닌 필드만 업데이트 => updateDTO에서 int를 Integer로 변경
@@ -159,20 +159,20 @@ public class StockAlertSettingService {
         }
 
         // 저장
-        stockAlertSettingRepository.save(setting);
+        StockAlertSetting updatedSetting = stockAlertSettingRepository.save(setting);
 
-        // 업데이트 시 StockPriceProcessor 캐시 부분 업데이트
-        stockPriceProcessor.updateStockAlertCondition(setting);
+        // 🔥 실시간 알람 조건 업데이트
+        stockPriceProcessor.updateStockAlertCondition(updatedSetting);
 
         return StockAlertSettingResponseDTO.builder()
-                .userId(setting.getUser().getUserId())
-                .stockId(setting.getStock().getStockId())
-                .targetPrice(setting.getTargetPrice())
-                .condition(setting.getCondition())
+                .userId(updatedSetting.getUser().getUserId())
+                .stockId(updatedSetting.getStock().getStockId())
+                .targetPrice(updatedSetting.getTargetPrice())
+                .condition(updatedSetting.getCondition())
                 .build();
     }
 
-    // 특정 유저의 특정 주식 설정 삭제
+    // 🔥 특정 유저의 특정 주식 설정 삭제 (수정됨)
     public StockAlertSettingResponseDTO deleteSetting(CustomUserDetails userDetails, String stockId) {
 
         if (userDetails.getUserId() == null) {
@@ -184,7 +184,7 @@ public class StockAlertSettingService {
 
         StockAlertSetting setting =
                 stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId)
-                .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
+                        .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
 
         StockAlertSettingResponseDTO deleteSetting =
                 StockAlertSettingResponseDTO.builder()
@@ -193,6 +193,14 @@ public class StockAlertSettingService {
                         .targetPrice(setting.getTargetPrice())
                         .condition(setting.getCondition())
                         .build();
+
+        // 🔥 실시간 알람 조건 제거 (삭제 전에 호출)
+        stockPriceProcessor.removeCondition(
+                setting.getSettingId(),
+                setting.getStock().getStockId(),
+                setting.getCondition(),
+                setting.getTargetPrice()
+        );
 
         stockAlertSettingRepository.delete(setting);
 

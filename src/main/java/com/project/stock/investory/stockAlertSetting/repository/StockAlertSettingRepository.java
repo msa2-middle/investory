@@ -17,5 +17,13 @@ public interface StockAlertSettingRepository extends JpaRepository<StockAlertSet
     Optional<StockAlertSetting> findByUserUserIdAndStockStockId(Long userId, String stockId);
 
     List<StockAlertSetting> findByIsActiveTrue();
+
+    // 🔥 활성化된 알람 설정의 종목 코드들을 조회
+    @Query("SELECT DISTINCT s.stock.stockId FROM StockAlertSetting s WHERE s.isActive = 1")
+    List<String> findActiveStockCodes();
+
+    // 🔥 특정 종목의 활성화된 알람 수 조회
+    @Query("SELECT COUNT(s) FROM StockAlertSetting s WHERE s.stock.stockId = :stockCode AND s.isActive = 1")
+    long countActiveAlertsByStockCode(@Param("stockCode") String stockCode);
 }
 

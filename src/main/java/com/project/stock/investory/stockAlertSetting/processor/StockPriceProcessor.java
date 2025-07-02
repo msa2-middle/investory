@@ -1,9 +1,8 @@
 package com.project.stock.investory.stockAlertSetting.processor;
 
-import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
-import com.project.stock.investory.alarm.entity.AlarmType;
 import com.project.stock.investory.alarm.helper.AlarmHelper;
 import com.project.stock.investory.alarm.service.AlarmService;
+import com.project.stock.investory.stockAlertSetting.event.StockAlertEvent;
 import com.project.stock.investory.stockAlertSetting.model.AlertCondition;
 import com.project.stock.investory.stockAlertSetting.model.ConditionType;
 import com.project.stock.investory.stockAlertSetting.model.StockAlertSetting;
@@ -16,6 +15,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +32,7 @@ public class StockPriceProcessor {
     private final StockRepository stockRepository;
     private final StockAlertSettingRepository stockAlertSettingRepository;
     private final AlarmHelper alarmHelper;
+    private final ApplicationEventPublisher eventPublisher; // 🔥 WebSocket 대신 이벤트 사용
 
     // 가격 이상 조건들 (목표가를 오름차순으로 정렬)
     private final Map<String, NavigableMap<Integer, List<AlertCondition>>> overMap = new ConcurrentHashMap<>();
@@ -52,33 +53,15 @@ public class StockPriceProcessor {
         log.info("StockPriceProcessor 초기화 완료");
     }
 
-//    // 테스트용
-//    @Scheduled(initialDelay = 10000)
-//    public void test1() {
-//        process("201490", 5590);
-//
-//    }
-//
-//    @Scheduled(initialDelay = 20000)
-//    public void test2() {
-//
-//        process("417860", 22450);
-//
-//    }
-//
-//    @Scheduled(initialDelay = 30000)
-//    public void test3() {
-//
-//        process("060250", 11080);
-//    }
-    
-    
-    // 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화)
+    // 🔥 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화) - 수정됨
     @Scheduled(fixedRate = 1800000)
     public void refreshConditions() {
         log.info("주기적 동기화 시작 (백업용)");
         loadAllConditions();
         refreshCaches();
+
+        // 🔥 WebSocket 구독도 새로고침 (이벤트 발행)
+        eventPublisher.publishEvent(StockAlertEvent.createRefresh());
     }
 
     private void loadAllConditions() {
@@ -157,7 +140,7 @@ public class StockPriceProcessor {
 
     public void process(String stockCode, int currentPrice) {
         try {
-            log.debug("주식 가격 처리: 종목={}, 현재가={}", stockCode, currentPrice);
+//            log.debug("주식 가격 처리: 종목={}, 현재가={}", stockCode, currentPrice);
             checkAndNotify(stockCode, currentPrice);
         } catch (Exception e) {
             log.error("주식 가격 처리 중 오류 발생: 종목={}, 현재가={}", stockCode, currentPrice, e);
@@ -217,25 +200,6 @@ public class StockPriceProcessor {
                         stockCache.put(stockCode, stock); // 캐시 업데이트
                     }
 
-//                    // 알람 생성
-//                    AlarmRequestDTO alarmRequest = AlarmRequestDTO
-//                            .builder()
-//                            .content(String.format
-//                                    (
-//                                            "[주식 알림] %s님, %s 주식이 목표가 %,d원 %s에 도달했습니다. (현재가: %,d원)",
-//                                            user.getName() != null ? user.getName() : "사용자",
-//                                            stock.getStockName(),
-//                                            cond.getTargetPrice(),
-//                                            conditionText,
-//                                            currentPrice
-//                                    )
-//                            )
-//                            .type(AlarmType.STOCK_PRICE)
-//                            .build();
-//
-//                    // 알람 보내기 실행
-//                    alarmService.createAlarm(alarmRequest, user.getUserId());
-
                     // 알람 보내기 실행
                     alarmHelper.createStockPriceAlarm(stockCode, user, cond.getTargetPrice(), currentPrice, stock.getStockName(), conditionText);
 
@@ -274,20 +238,26 @@ public class StockPriceProcessor {
         }
     }
 
-    // 새로운 알람 설정이 추가될 때 호출
+    // 🔥 새로운 알람 설정이 추가될 때 호출 (수정됨)
     public void addCondition(StockAlertSetting setting) {
         try {
             loadConditions(Collections.singletonList(setting));
-            log.info("새 알람 조건 추가됨: settingId={}", setting.getSettingId());
+
+            // 🔥 WebSocket 구독 추가 (이벤트 발행)
+            eventPublisher.publishEvent(StockAlertEvent.createAdd(setting.getStock().getStockId()));
+
+            log.info("새 알람 조건 추가됨: settingId={}, stockCode={}",
+                    setting.getSettingId(), setting.getStock().getStockId());
         } catch (Exception e) {
             log.error("알람 조건 추가 실패: settingId={}", setting.getSettingId(), e);
         }
     }
 
-    // 알람 설정이 삭제될 때 호출
+    // 🔥 알람 설정이 삭제될 때 호출 (수정됨)
     public void removeCondition(Long settingId, String stockCode, ConditionType conditionType, Integer targetPrice) {
         try {
-            Map<String, NavigableMap<Integer, List<AlertCondition>>> targetMap = (conditionType == ConditionType.ABOVE) ? overMap : underMap;
+            Map<String, NavigableMap<Integer, List<AlertCondition>>> targetMap =
+                    (conditionType == ConditionType.ABOVE) ? overMap : underMap;
 
             NavigableMap<Integer, List<AlertCondition>> stockConditions = targetMap.get(stockCode);
             if (stockConditions != null) {
@@ -303,11 +273,24 @@ public class StockPriceProcessor {
                 }
             }
 
+            // 🔥 수정: 조건 제거 후 해당 종목에 알람이 없는지 확인
+            if (!hasAnyAlertForStock(stockCode)) {
+                log.info("종목 {}에 대한 모든 알람이 제거됨, WebSocket 구독 해제", stockCode);
+                eventPublisher.publishEvent(StockAlertEvent.createRemove(stockCode, settingId, conditionType, targetPrice));
+            }
+
             processedAlerts.remove(settingId);
-            log.info("알람 조건 삭제됨: settingId={}", settingId);
+            log.info("알람 조건 삭제됨: settingId={}, stockCode={}", settingId, stockCode);
         } catch (Exception e) {
             log.error("알람 조건 삭제 실패: settingId={}", settingId, e);
         }
+    }
+
+
+    // 🔥 특정 종목에 알람이 있는지 확인
+    private boolean hasAnyAlertForStock(String stockCode) {
+        return (overMap.containsKey(stockCode) && !overMap.get(stockCode).isEmpty()) ||
+                (underMap.containsKey(stockCode) && !underMap.get(stockCode).isEmpty());
     }
 
     // 사용자 캐시 업데이트 (생성/수정 시 사용)
@@ -322,10 +305,11 @@ public class StockPriceProcessor {
         log.info("사용자 캐시 삭제: userId={}", userId);
     }
 
-
-    // 주식 알람 설정 변경 시 조건 맵 업데이트
+    // 🔥 주식 알람 설정 변경 시 조건 맵 업데이트 (수정됨)
     public void updateStockAlertCondition(StockAlertSetting setting) {
         try {
+            String stockCode = setting.getStock().getStockId();
+
             // 먼저 기존 조건 제거 (settingId로 찾아서 제거)
             removeConditionBySettingId(setting.getSettingId());
 
@@ -334,13 +318,16 @@ public class StockPriceProcessor {
                 addCondition(setting);
                 log.info("알람 조건 업데이트 완료: settingId={}, 활성화됨", setting.getSettingId());
             } else {
+                // 🔥 비활성화된 경우 해당 종목에 다른 알람이 없으면 구독 해제 (이벤트 발행)
+                if (!hasAnyAlertForStock(stockCode)) {
+                    eventPublisher.publishEvent(StockAlertEvent.createUpdate(stockCode));
+                }
                 log.info("알람 조건 업데이트 완료: settingId={}, 비활성화됨", setting.getSettingId());
             }
         } catch (Exception e) {
             log.error("알람 조건 업데이트 실패: settingId={}", setting.getSettingId(), e);
         }
     }
-
 
     // settingId로 조건 제거 (내부 헬퍼 메서드)
     private void removeConditionBySettingId(Long settingId) {
@@ -355,7 +342,6 @@ public class StockPriceProcessor {
             log.error("settingId로 조건 제거 실패: settingId={}", settingId, e);
         }
     }
-
 
     // Map에서 settingId와 일치하는 조건 제거
     private void removeFromMap(Map<String, NavigableMap<Integer, List<AlertCondition>>> targetMap, Long settingId) {
