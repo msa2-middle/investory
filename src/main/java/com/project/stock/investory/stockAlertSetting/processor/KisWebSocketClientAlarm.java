@@ -98,7 +98,7 @@ public class KisWebSocketClientAlarm {
 //            System.out.println("[ALARM-DEBUG] tr_id: " + trId + ", seq: " + seq);
 
             // 호가 데이터 처리
-            if (!"H0STASP0".equals(trId)) {
+            if (!"H0NXASP0".equals(trId)) {
                 System.out.println("[ALARM-WARN] 예상하지 못한 tr_id: " + trId);
                 return;
             }
@@ -302,7 +302,7 @@ public class KisWebSocketClientAlarm {
                     },
                     "body": {
                       "input": {
-                          "tr_id": "H0STASP0",
+                          "tr_id": "H0NXASP0",
                           "tr_key": "005930"
                       }
                     }
@@ -318,12 +318,12 @@ public class KisWebSocketClientAlarm {
                       "custtype": "P",
                       "tr_type": "1",
                       "content-type": "utf-8",
-                      "tr_id": "H0STASP0",
+                      "tr_id": "H0NXASP0",
                       "tr_key": "%s"
                     },
                     "body": {
                       "input": {
-                        "tr_id": "H0STASP0",
+                        "tr_id": "H0NXASP0",
                         "tr_key": "%s"
                       }
                     }
@@ -340,12 +340,12 @@ public class KisWebSocketClientAlarm {
                       "custtype": "P",
                       "tr_type": "2",
                       "content-type": "utf-8",
-                      "tr_id": "H0STASP0",
+                      "tr_id": "H0NXASP0",
                       "tr_key": "%s"
                     },
                     "body": {
                       "input": {
-                        "tr_id": "H0STASP0",
+                        "tr_id": "H0NXASP0",
                         "tr_key": "%s"
                       }
                     }
