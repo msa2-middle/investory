@@ -269,13 +269,14 @@ public class StockPriceProcessor {
                     }
                     if (stockConditions.isEmpty()) {
                         targetMap.remove(stockCode);
-
-                        // 🔥 해당 종목에 더 이상 알람이 없으면 구독 해제 (이벤트 발행)
-                        if (!hasAnyAlertForStock(stockCode)) {
-                            eventPublisher.publishEvent(StockAlertEvent.createRemove(stockCode, settingId, conditionType, targetPrice));
-                        }
                     }
                 }
+            }
+
+            // 🔥 수정: 조건 제거 후 해당 종목에 알람이 없는지 확인
+            if (!hasAnyAlertForStock(stockCode)) {
+                log.info("종목 {}에 대한 모든 알람이 제거됨, WebSocket 구독 해제", stockCode);
+                eventPublisher.publishEvent(StockAlertEvent.createRemove(stockCode, settingId, conditionType, targetPrice));
             }
 
             processedAlerts.remove(settingId);
@@ -284,6 +285,7 @@ public class StockPriceProcessor {
             log.error("알람 조건 삭제 실패: settingId={}", settingId, e);
         }
     }
+
 
     // 🔥 특정 종목에 알람이 있는지 확인
     private boolean hasAnyAlertForStock(String stockCode) {
