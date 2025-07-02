@@ -31,6 +31,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        if (isPermitAllPath(path)) {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                SecurityContextHolder.getContext().setAuthentication(
+                        new UsernamePasswordAuthenticationToken("anonymousUser", null, Collections.emptyList())
+                );
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. HTTP Header에서 JWT 추출
         String header = request.getHeader("Authorization");
 
@@ -71,5 +83,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 6. 다음 필터로 넘김
         filterChain.doFilter(request, response);
+    }
+    private boolean isPermitAllPath(String path) {
+        return path.startsWith("/main")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/users/signup")
+                || path.startsWith("/users/login")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/users/password-reset")
+                || path.startsWith("/users/refresh")
+                || path.startsWith("/stock")
+                || path.startsWith("/community/posts")
+                || path.startsWith("/alarm/storage")
+                || path.startsWith("/post")
+                || path.startsWith("/main");
     }
 }
