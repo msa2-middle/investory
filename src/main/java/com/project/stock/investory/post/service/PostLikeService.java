@@ -2,6 +2,7 @@ package com.project.stock.investory.post.service;
 
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.entity.AlarmType;
+import com.project.stock.investory.alarm.helper.AlarmHelper;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.post.entity.Post;
 import com.project.stock.investory.post.entity.PostLike;
@@ -24,7 +25,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final AlarmService alarmService;
+    private final AlarmHelper alarmHelper;
 
     // 좋아요 표시
     @Transactional
@@ -62,18 +63,7 @@ public class PostLikeService {
         postLikeRepository.save(postLike);
 
         // 알람보내기
-        AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                .builder()
-                .content(userPost.getName()
-                        + "님의 "
-                        + post.getTitle()
-                        + " 게시글에 "
-                        + user.getName()
-                        + " 님이 좋아요를 눌렀습니다.")
-                .type(AlarmType.COMMENT)
-                .build();
-
-        alarmService.createAlarm(alarmRequest, post.getUserId());
+        alarmHelper.createPostLikeAlarm(post.getPostId(), user, post.getUserId(), post.getTitle());
     }
 
     // 좋아요 해제

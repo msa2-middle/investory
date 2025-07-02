@@ -8,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -21,9 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Alarm {
-
     @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "alarm_seq")
     @SequenceGenerator(name = "alarm_seq", sequenceName = "alarm_seq", allocationSize = 1)
     @Column(name = "alarm_id")
@@ -43,14 +39,20 @@ public class Alarm {
     @Column(nullable = false)
     private Integer isRead;
 
+    @Column(name = "target_url", length = 500)
+    private String targetUrl;
 
-//    @CreatedDate
-//    @Column(name = "created_at")
-//    private LocalDateTime createdAt;
-//
-//    @LastModifiedDate
-//    @Column(name = "updated_at")
-//    private LocalDateTime updatedAt;
+    // 핵심: 단일 FK로 모든 관련 엔티티 참조 (NULL 값 없음!)
+    @Column(name = "related_entity_id", nullable = false, length = 50)
+    private String relatedEntityId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "related_entity_type", nullable = false, length = 20)
+    private RelatedEntityType relatedEntityType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    private User sender;
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP")
     @CreationTimestamp
@@ -63,13 +65,13 @@ public class Alarm {
     @PrePersist
     public void prePersist() {
         if (isRead == null) {
-            isRead = 0;  // 기본값 0으로 셋팅
+            isRead = 0;
         }
     }
 
     public void updateAlarmIsRead() {
         this.isRead = 1;
     }
-
 }
+
 

@@ -2,6 +2,7 @@ package com.project.stock.investory.stockAlertSetting.processor;
 
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.entity.AlarmType;
+import com.project.stock.investory.alarm.helper.AlarmHelper;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.stockAlertSetting.model.AlertCondition;
 import com.project.stock.investory.stockAlertSetting.model.ConditionType;
@@ -30,6 +31,7 @@ public class StockPriceProcessor {
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
     private final StockAlertSettingRepository stockAlertSettingRepository;
+    private final AlarmHelper alarmHelper;
 
     // 가격 이상 조건들 (목표가를 오름차순으로 정렬)
     private final Map<String, NavigableMap<Integer, List<AlertCondition>>> overMap = new ConcurrentHashMap<>();
@@ -215,24 +217,27 @@ public class StockPriceProcessor {
                         stockCache.put(stockCode, stock); // 캐시 업데이트
                     }
 
-                    // 알람 생성
-                    AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                            .builder()
-                            .content(String.format
-                                    (
-                                            "[주식 알림] %s님, %s 주식이 목표가 %,d원 %s에 도달했습니다. (현재가: %,d원)",
-                                            user.getName() != null ? user.getName() : "사용자",
-                                            stock.getStockName(),
-                                            cond.getTargetPrice(),
-                                            conditionText,
-                                            currentPrice
-                                    )
-                            )
-                            .type(AlarmType.STOCK_PRICE)
-                            .build();
+//                    // 알람 생성
+//                    AlarmRequestDTO alarmRequest = AlarmRequestDTO
+//                            .builder()
+//                            .content(String.format
+//                                    (
+//                                            "[주식 알림] %s님, %s 주식이 목표가 %,d원 %s에 도달했습니다. (현재가: %,d원)",
+//                                            user.getName() != null ? user.getName() : "사용자",
+//                                            stock.getStockName(),
+//                                            cond.getTargetPrice(),
+//                                            conditionText,
+//                                            currentPrice
+//                                    )
+//                            )
+//                            .type(AlarmType.STOCK_PRICE)
+//                            .build();
+//
+//                    // 알람 보내기 실행
+//                    alarmService.createAlarm(alarmRequest, user.getUserId());
 
                     // 알람 보내기 실행
-                    alarmService.createAlarm(alarmRequest, user.getUserId());
+                    alarmHelper.createStockPriceAlarm(stockCode, user, cond.getTargetPrice(), currentPrice, stock.getStockName(), conditionText);
 
                     // DB 업데이트 (영구적으로 비활성화)
                     StockAlertSetting stockAlertSetting =

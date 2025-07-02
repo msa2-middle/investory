@@ -2,6 +2,7 @@ package com.project.stock.investory.comment.service;
 
 import com.project.stock.investory.alarm.dto.AlarmRequestDTO;
 import com.project.stock.investory.alarm.entity.AlarmType;
+import com.project.stock.investory.alarm.helper.AlarmHelper;
 import com.project.stock.investory.alarm.service.AlarmService;
 import com.project.stock.investory.comment.dto.CommentRequestDTO;
 import com.project.stock.investory.comment.dto.CommentResponseDTO;
@@ -32,7 +33,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
-    private final AlarmService alarmService;
+    private final AlarmHelper alarmHelper;
 
     //  댓글 생성
     @Transactional
@@ -69,18 +70,9 @@ public class CommentService {
         Comment savedComment = commentRepository.save(comment);
 
         if (!userPost.getUserId().equals(comment.getUser().getUserId())) {
-            AlarmRequestDTO alarmRequest = AlarmRequestDTO
-                    .builder()
-                    .content(userPost.getName()
-                            + "님의 "
-                            + post.getTitle()
-                            + " 게시글에 "
-                            + user.getName()
-                            + " 님이 댓글을 남겼습니다.")
-                    .type(AlarmType.COMMENT)
-                    .build();
 
-            alarmService.createAlarm(alarmRequest, userPost.getUserId()); // 게시글 작성자에게 보내기
+            alarmHelper.createPostCommentAlarm(post.getPostId(), user, post.getUserId(), post.getTitle());
+
         }
 
         return CommentResponseDTO
