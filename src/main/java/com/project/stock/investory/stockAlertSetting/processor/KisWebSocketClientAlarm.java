@@ -5,6 +5,7 @@ import com.project.stock.investory.stockAlertSetting.event.StockPriceEvent;
 import com.project.stock.investory.stockInfo.repository.StockRepository;
 import com.project.stock.investory.stockAlertSetting.repository.StockAlertSettingRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.websocket.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,8 @@ public class KisWebSocketClientAlarm {
     private final StockRepository stockRepository;
     private final StockAlertSettingRepository stockAlertSettingRepository;
     private final ApplicationEventPublisher eventPublisher; // 🔥 이벤트 발행자 추가
+    private volatile boolean isApplicationShuttingDown = false;
+
 
     @Value("${koreainvest.approval-key}")
     private String approvalKey;
@@ -69,6 +72,11 @@ public class KisWebSocketClientAlarm {
     @OnMessage
     public void onMessage(String message) {
         System.out.println("[ALARM-RECEIVED] " + message);
+
+        if (isApplicationShuttingDown) {
+            return; // 종료 중이면 처리 중단
+        }
+
 
         try {
             // JSON 메시지일 경우 pass
@@ -146,9 +154,15 @@ public class KisWebSocketClientAlarm {
                     ", 추정현재가: " + estimatedCurrentPrice);
 
             // 🔥 이벤트 발행으로 StockPriceProcessor에 전달
-            eventPublisher.publishEvent(new StockPriceEvent(stockCode, estimatedCurrentPrice));
+            if (!isApplicationShuttingDown) {
+                eventPublisher.publishEvent(new StockPriceEvent(stockCode, estimatedCurrentPrice));
+            }
 
         } catch (Exception e) {
+            if (e.getMessage().contains("Singleton bean creation not allowed")) {
+                isApplicationShuttingDown = true;
+                return;
+            }
             System.err.println("[ALARM-ERROR] 메시지 처리 중 오류: " + e.getMessage());
             e.printStackTrace();
         }
@@ -167,6 +181,13 @@ public class KisWebSocketClientAlarm {
         throwable.printStackTrace();
         stopHeartbeat();
     }
+
+    // 종료 시 호출
+    @PreDestroy
+    public void shutdown() {
+        isApplicationShuttingDown = true;
+    }
+
 
     // 🔥 알람 설정된 종목들만 구독
     private void subscribeToAlertStocks() {
