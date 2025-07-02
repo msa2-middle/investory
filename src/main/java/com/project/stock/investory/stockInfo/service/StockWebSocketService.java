@@ -2,6 +2,8 @@ package com.project.stock.investory.stockInfo.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.stock.investory.stockInfo.dto.RealTimeTradeDTO;
+import com.project.stock.investory.stockInfo.exception.StockNotFoundException;
+import com.project.stock.investory.stockInfo.repository.StockRepository;
 import com.project.stock.investory.stockInfo.util.StockMarketUtils;
 import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class StockWebSocketService {
 
     private final KisWebSocketClient kisClient;
+    private final StockRepository stockRepository;
     private final ObjectMapper om = new ObjectMapper();
 
     //여러 스레드가 동시에 읽고 쓸 수 있게 하여 동시성 문제를 방지 : ConcurrentHashMap<>()
@@ -39,8 +42,9 @@ public class StockWebSocketService {
     private final Set<String> subscribed = ConcurrentHashMap.newKeySet(); // DTO 객체나 Map을 JSON 문자열로 변환해 SSE로 전송
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>(); // 종목 코드(stockId)별로 구독 중인 SSE 연결들을 저장
 
-    public StockWebSocketService(KisWebSocketClient kisClient) {
+    public StockWebSocketService(KisWebSocketClient kisClient, StockRepository stockRepository) {
         this.kisClient = kisClient;
+        this.stockRepository=stockRepository;
     }
 
     public SseEmitter getStockPriceStream(String stockId) {
@@ -48,6 +52,11 @@ public class StockWebSocketService {
         // ① 장 외 시간이면 종료
         if (!StockMarketUtils.isTradingHours()) {
             return closedEmitter("marketClosed", "장 외 시간입니다.");
+        }
+
+        // 해당 종목 번호(stockId)가 있는지,, 없으면 StockNotFoundException 호출
+        if(!stockRepository.existsByStockId((stockId))){
+            throw new StockNotFoundException(stockId);
         }
 
         // ② 새 emitter 생성 (30분 timeout)
