@@ -55,6 +55,10 @@ public class StockAlertSettingController {
         StockAlertSettingResponseDTO response =
                 stockAlertSettingService.getUserStockSettings(userDetails, stockId);
 
+        if (response == null) {
+            return ResponseEntity.noContent().build(); // 또는 ResponseEntity.notFound().build()
+        }
+
         return ResponseEntity.ok(response);
     }
 
@@ -80,6 +84,12 @@ public class StockAlertSettingController {
 
         StockAlertSettingResponseDTO response =
                 stockAlertSettingService.deleteSetting(userDetails, stockId);
+
+        if (response == null) {
+            // 이미 없던 설정을 삭제하려 했던 경우
+            return ResponseEntity.noContent().build();
+        }
+
         return ResponseEntity.ok(response);
     }
 

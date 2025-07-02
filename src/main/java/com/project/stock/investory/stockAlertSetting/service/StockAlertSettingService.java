@@ -38,7 +38,7 @@ public class StockAlertSettingService {
     // 🔥 주가 알람 설정 생성 (수정됨)
     public StockAlertSettingResponseDTO create(String stockId, StockAlertSettingCreateRequestDTO request, CustomUserDetails userDetails) {
 
-        if (userDetails.getUserId() == null) {
+        if (userDetails == null || userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
         }
 
@@ -85,8 +85,9 @@ public class StockAlertSettingService {
     // 특정 유저의 설정 전체 조회
     public List<StockAlertSettingResponseDTO> getUserSettings(CustomUserDetails userDetails) {
 
-        if (userDetails.getUserId() == null) {
-            throw new AuthenticationRequiredException();
+        if (userDetails == null || userDetails.getUserId() == null) {
+            // 로그인 안 한 사용자면 빈 리스트 반환
+            return List.of();
         }
 
         User user = userRepository.findById(userDetails.getUserId())
@@ -95,7 +96,7 @@ public class StockAlertSettingService {
         List<StockAlertSetting> settings = stockAlertSettingRepository.findByUserUserId(user.getUserId());
 
         if (settings.isEmpty()) {
-            throw new EntityNotFoundException();
+            return List.of();
         }
 
         return settings.stream()
@@ -112,16 +113,21 @@ public class StockAlertSettingService {
     // 특정 유저의 특정 주식 설정 조회
     public StockAlertSettingResponseDTO getUserStockSettings(CustomUserDetails userDetails, String stockId) {
 
-        if (userDetails.getUserId() == null) {
+        if (userDetails == null || userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
         }
 
         User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(()->new UserNotFoundException());
 
-        StockAlertSetting setting =
-                stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId)
-                        .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
+        Optional<StockAlertSetting> opt =
+                stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId);
+
+        if (opt.isEmpty()) {
+            return null;
+        }
+
+        StockAlertSetting setting = opt.get();
 
         return StockAlertSettingResponseDTO.builder()
                 .userId(setting.getUser().getUserId())
@@ -137,7 +143,7 @@ public class StockAlertSettingService {
     public StockAlertSettingResponseDTO updateSetting(
             CustomUserDetails userDetails, String stockId, StockAlertSettingUpdateRequestDTO request
     ) {
-        if (userDetails.getUserId() == null) {
+        if (userDetails == null || userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
         }
 
@@ -175,16 +181,22 @@ public class StockAlertSettingService {
     // 🔥 특정 유저의 특정 주식 설정 삭제 (수정됨)
     public StockAlertSettingResponseDTO deleteSetting(CustomUserDetails userDetails, String stockId) {
 
-        if (userDetails.getUserId() == null) {
+        if (userDetails == null || userDetails.getUserId() == null) {
             throw new AuthenticationRequiredException();
         }
 
         User user = userRepository.findById(userDetails.getUserId())
                 .orElseThrow(()->new UserNotFoundException());
 
-        StockAlertSetting setting =
-                stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId)
-                        .orElseThrow(() -> new StockAlertSettingNotFoundException()); // 예외처리
+        Optional<StockAlertSetting> optSetting =
+                stockAlertSettingRepository.findByUserUserIdAndStockStockId(user.getUserId(), stockId);
+
+        if (optSetting.isEmpty()) {
+            // 이미 설정이 없다면 아무것도 하지 않고 null 반환 (또는 Optional 반환해도 됨)
+            return null;
+        }
+
+        StockAlertSetting setting = optSetting.get();
 
         StockAlertSettingResponseDTO deleteSetting =
                 StockAlertSettingResponseDTO.builder()

@@ -46,7 +46,7 @@ public class SecurityConfig {
                         // Swagger, 회원가입, 로그인 등 공개 API
                         .requestMatchers(
                                 "/swagger-ui/**", "/v3/api-docs/**",
-                                "/users/signup", "/users/login", "/oauth2/**", "/alarm/**",
+                                "/users/signup", "/users/login", "/oauth2/**",
                                 "/users/password-reset/send-code",
                                 "/users/password-reset/verify-code",
                                 "/users/password-reset/reset",
@@ -70,7 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/main/**").permitAll()
 
                         // 알림 조회 공개
-                        .requestMatchers(HttpMethod.GET, "/alarm/storage/**").permitAll()
+                        //.requestMatchers(HttpMethod.GET, "/alarm/storage/**").permitAll()
 
                         // 댓글 조회 GET 요청 전체 공개
                         .requestMatchers(HttpMethod.GET, "/post/**").permitAll()
