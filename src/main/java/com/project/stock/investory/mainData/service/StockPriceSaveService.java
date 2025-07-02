@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -193,7 +194,7 @@ public class StockPriceSaveService {
             dtoList = stockPriceHistoryService.getStockPriceHistory(stockId, todayStr, periodDiv);
         } catch (Exception e) {
             log.error("API 호출 중 오류 발생 (종목: {}, 기간: {}): {}", stockId, todayStr, e.getMessage(), e);
-            throw new RuntimeException("API 데이터 조회 실패", e);
+            dtoList = Collections.emptyList();
         }
 
         // 2. DTO를 Entity로 변환
@@ -210,7 +211,6 @@ public class StockPriceSaveService {
             long exist = stockPriceHistoryRepository.countByStockIdAndTradeDateNative(
                     entity.getStockId(), entity.getTradeDate());
 
-            System.out.println("jjhdbug" + exist);
             if (!(exist > 0)) {
                 stockPriceHistoryRepository.save(entity);
             } else {
