@@ -302,7 +302,7 @@ public class KisWebSocketClientAlarm {
                     },
                     "body": {
                       "input": {
-                          "tr_id": "H0STASP0",
+                          "tr_id": "H0NXASP0",
                           "tr_key": "005930"
                       }
                     }
