@@ -48,7 +48,7 @@ public class StockPriceHistoryService {
     }
 
     /**
-     * 주식 가격 이력 조회
+     * 주식 가격 이력 조회(history)
      *
      * @param stockId 종목코드 (예: "005930")
      * @param period  기간 타입 (D:일봉, W:주봉, M:월봉)
@@ -56,7 +56,8 @@ public class StockPriceHistoryService {
      */
     public List<StockPriceHistoryDto> getStockPriceHistory(
             String stockId,
-            String period
+            String period,
+            String periodDiv
     ) {
         HttpHeaders headers = createHistoryHeaders();
 
@@ -67,7 +68,7 @@ public class StockPriceHistoryService {
                         .queryParam("fid_input_iscd", stockId)
                         .queryParam("fid_input_date_1", "20000101") // 가장 과거 데이터 하한 설정
                         .queryParam("fid_input_date_2", period)
-                        .queryParam("fid_period_div_code", "W") //  (D:일봉, W:주봉, M:월봉, Y:년봉)
+                        .queryParam("fid_period_div_code", periodDiv) //  (D:일봉, W:주봉, M:월봉, Y:년봉)
                         .queryParam("fid_org_adj_prc", "0") //  (0:수정주가 1:원주가)
                         .build())
                 .headers(httpHeaders -> httpHeaders.addAll(headers))
