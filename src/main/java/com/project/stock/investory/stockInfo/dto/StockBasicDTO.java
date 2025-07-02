@@ -28,4 +28,5 @@ public class StockBasicDTO {
     private String idxBztpLclsCdName;       // 산업분류 (대분류)
     private String admnItemYn;              // 관리종목 여부
     private String trStopYn;                // 거래정지 여부
+
 }
