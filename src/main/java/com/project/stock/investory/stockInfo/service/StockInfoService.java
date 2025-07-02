@@ -3,6 +3,7 @@ package com.project.stock.investory.stockInfo.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.stock.investory.stockInfo.dto.*;
+import com.project.stock.investory.stockInfo.exception.StockNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -62,7 +63,9 @@ public class StockInfoService {
             JsonNode rootNode = objectMapper.readTree(response);
             JsonNode outputNode = rootNode.get("output");
 
-            if (outputNode == null) throw new IllegalStateException("output is null");
+            if (outputNode == null || outputNode.isNull() || outputNode.get("prdt_name").isNull()) {
+                throw new StockNotFoundException(stockId);
+            }
 
 
             ProductBasicDTO dto = new ProductBasicDTO();
@@ -438,11 +441,5 @@ public class StockInfoService {
         headers.set("tr_id", trId);
         return headers;
     }
-
-//    private String getSafeText(JsonNode node, String fieldName) {
-//        JsonNode value = node.get(fieldName);
-//        return value != null ? value.asText() : "";
-//    }
-
 }
 

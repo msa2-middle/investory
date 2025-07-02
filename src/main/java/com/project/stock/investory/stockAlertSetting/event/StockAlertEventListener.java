@@ -1,6 +1,5 @@
 package com.project.stock.investory.stockAlertSetting.event;
 
-import com.project.stock.investory.stockAlertSetting.processor.KisWebSocketClientAlarm;
 import com.project.stock.investory.stockAlertSetting.processor.StockPriceProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

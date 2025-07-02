@@ -8,8 +8,8 @@ import java.time.ZoneId;
 public class StockMarketUtils {
     public static boolean isTradingHours() {
         LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul"));
-        LocalTime open = LocalTime.of(9, 0);
-        LocalTime close = LocalTime.of(15, 30);
+        LocalTime open = LocalTime.of(8, 0);
+        LocalTime close = LocalTime.of(20, 0);
 
         DayOfWeek day = LocalDate.now(ZoneId.of("Asia/Seoul")).getDayOfWeek();
         boolean isWeekday = day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY;

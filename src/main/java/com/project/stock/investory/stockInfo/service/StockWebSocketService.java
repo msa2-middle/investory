@@ -1,172 +1,161 @@
 package com.project.stock.investory.stockInfo.service;
 
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.stock.investory.stockInfo.dto.RealTimeTradeDTO;
 import com.project.stock.investory.stockInfo.util.StockMarketUtils;
 import com.project.stock.investory.stockInfo.websocket.KisWebSocketClient;
-import io.jsonwebtoken.io.IOException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
-@Service
+/**
+ * 주식 실시간 체결 데이터를 KIS WebSocket 으로부터 받아
+ * 구독 중인 클라이언트(SSE) 들에게 전달(fan‑out)하는 서비스.
+ * 주요 책임
+ *
+ *   1. KIS 구독/해지 관리
+ *   2. SSE 연결(Emitter) 생성·보존·해제
+ *   3. 실시간 체결 데이터 fan‑out(전달)
+ *   4. 다중 스레드 환경에서 안전한 동시성 제어
+ */
 @Slf4j
+@Service
 public class StockWebSocketService {
-    private final KisWebSocketClient kisClient;
 
-    // 활성 SSE 연결 관리
-    private final Map<String, SseEmitter> activeEmitters = new ConcurrentHashMap<>();
+    private final KisWebSocketClient kisClient;
+    private final ObjectMapper om = new ObjectMapper();
+
+    //여러 스레드가 동시에 읽고 쓸 수 있게 하여 동시성 문제를 방지 : ConcurrentHashMap<>()
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    private final Set<String> subscribed = ConcurrentHashMap.newKeySet(); // DTO 객체나 Map을 JSON 문자열로 변환해 SSE로 전송
+    private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>(); // 종목 코드(stockId)별로 구독 중인 SSE 연결들을 저장
 
     public StockWebSocketService(KisWebSocketClient kisClient) {
         this.kisClient = kisClient;
     }
 
-    /**
-     * 특정 종목의 실시간 가격 정보를 SSE로 스트리밍
-     */
     public SseEmitter getStockPriceStream(String stockId) {
-        // 국내장 시간
+
+        // ① 장 외 시간이면 종료
         if (!StockMarketUtils.isTradingHours()) {
-            log.info("장 외 시간, SSE 연결 차단: {}", stockId);
-            SseEmitter emitter = new SseEmitter(0L);
-            try {
-                emitter.send(SseEmitter.event().name("marketClosed").data("장 외 시간입니다."));
-            } catch (Exception ignored) {}
-            emitter.complete();
-            return emitter;
+            return closedEmitter("marketClosed", "장 외 시간입니다.");
         }
 
-        // 기존 연결이 있으면 정리
-        SseEmitter existingEmitter = activeEmitters.get(stockId);
-        if (existingEmitter != null) {
-            try {
-                existingEmitter.complete();
-            } catch (Exception e) {
-                log.debug("기존 emitter 정리 중 오류", e);
-            }
+        // ② 새 emitter 생성 (30분 timeout)
+        SseEmitter emitter = new SseEmitter(TimeUnit.MINUTES.toMillis(30));
+        emitters.computeIfAbsent(stockId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        log.info("[{}] SSE 연결 +1 (총 {}개)", stockId, emitters.get(stockId).size());
+
+        // ③ 최초 구독 여부 판단
+        if (subscribed.add(stockId)) {
+            log.info("[{}] ▶️  KIS subscribe", stockId);
+            kisClient.queueSubscribe(stockId, dto -> fanOut(stockId, dto));
+        } else {
+            log.debug("[{}] 이미 subscribe 중", stockId);
         }
 
-        // 새 SSE 연결 생성 (30분 타임아웃)
-        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
-        activeEmitters.put(stockId, emitter);
+        // ④ 종료 콜백 등록
+        emitter.onTimeout(() -> handleDisconnect(stockId, emitter));
+        emitter.onCompletion(() -> handleDisconnect(stockId, emitter));
+        emitter.onError(e -> removeEmitterOnly(stockId, emitter));
 
-        log.info("종목 {} 실시간 가격 스트리밍 시작", stockId);
-
-        // 연결 성공 메시지 전송
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("connected")
-                    .data("종목 " + stockId + " 실시간 데이터 연결됨", MediaType.TEXT_PLAIN));
-        } catch (IOException | java.io.IOException e) {
-            log.error("초기 연결 메시지 전송 실패: {}", stockId, e);
-            cleanupEmitter(stockId, emitter);
-            emitter.completeWithError(e);
-            return emitter;
-        }
-
-        // KIS WebSocket에서 해당 종목 데이터를 받아서 SSE로 전송하는 핸들러
-        kisClient.startListening(stockId, dto -> {
-            SseEmitter currentEmitter = activeEmitters.get(stockId);
-            if (currentEmitter == null || !currentEmitter.equals(emitter)) {
-                // 이미 다른 emitter로 교체됨
-                return;
-            }
-
-            try {
-                currentEmitter.send(SseEmitter.event()
-                        .name("priceUpdate")
-                        .data(dto));
-            } catch (IOException ex) {
-                log.debug("SSE 데이터 전송 실패 (연결 끊김): {}", stockId);
-                cleanupEmitter(stockId, currentEmitter);
-                kisClient.stopListening(stockId);
-            } catch (IllegalStateException ex) {
-                log.debug("SSE emitter 상태 오류: {}", stockId);
-                cleanupEmitter(stockId, currentEmitter);
-                kisClient.stopListening(stockId);
-            } catch (Exception ex) {
-                log.error("SSE 데이터 전송 중 예상치 못한 오류: {}", stockId, ex);
-                cleanupEmitter(stockId, currentEmitter);
-                kisClient.stopListening(stockId);
-            }
-        });
-
-        // SSE 연결 이벤트 핸들러 설정
-        emitter.onCompletion(() -> {
-            log.info("종목 {} SSE 연결 완료", stockId);
-            cleanupEmitter(stockId, emitter);
-            kisClient.stopListening(stockId);
-        });
-
-        emitter.onTimeout(() -> {
-            log.info("종목 {} SSE 연결 타임아웃", stockId);
-            cleanupEmitter(stockId, emitter);
-            kisClient.stopListening(stockId);
-        });
-
-        emitter.onError((throwable) -> {
-            if (isConnectionResetError(throwable)) {
-                log.debug("종목 {} 클라이언트 연결 종료", stockId);
-            } else {
-                log.warn("종목 {} SSE 연결 오류", stockId, throwable);
-            }
-            cleanupEmitter(stockId, emitter);
-            kisClient.stopListening(stockId);
-        });
+        sendEvent(emitter, "message", "connected"); // ✅ 추가
 
         return emitter;
     }
 
-    /**
-     * 연결 리셋 오류인지 확인
-     */
-    private boolean isConnectionResetError(Throwable throwable) {
-        if (throwable == null) return false;
+    public void fanOut(String stockId, RealTimeTradeDTO dto) {
+        List<SseEmitter> list = emitters.getOrDefault(stockId, new CopyOnWriteArrayList<>());
 
-        String message = throwable.getMessage();
-        return message != null && (
-                message.contains("Connection reset") ||
-                        message.contains("Broken pipe") ||
-                        message.contains("현재 연결은 사용자의 호스트 시스템의 소프트웨어의 의해 중단되었습니다") ||
-                        message.contains("An existing connection was forcibly closed")
-        );
-    }
-
-    /**
-     * Emitter 정리
-     */
-    private void cleanupEmitter(String stockId, SseEmitter emitter) {
-        SseEmitter currentEmitter = activeEmitters.get(stockId);
-        if (currentEmitter == emitter) {
-            activeEmitters.remove(stockId);
-        }
-
-        try {
-            if (!emitter.equals(currentEmitter)) {
-                emitter.complete();
-            }
-        } catch (Exception e) {
-            log.debug("Emitter 정리 중 오류", e);
-        }
-    }
-
-    /**
-     * 모든 활성 연결 종료 (애플리케이션 종료 시)
-     */
-    public void shutdown() {
-        log.info("모든 SSE 연결 종료");
-        for (Map.Entry<String, SseEmitter> entry : activeEmitters.entrySet()) {
+        for (SseEmitter emitter : list) {
             try {
-                entry.getValue().complete();
+                sendEvent(emitter, "trade", dto);
             } catch (Exception e) {
-                log.debug("SSE 연결 종료 중 오류: {}", entry.getKey(), e);
+                log.debug("[{}] emitter 전송 실패, 제거", stockId);
+                handleDisconnect(stockId, emitter);
             }
         }
-        activeEmitters.clear();
+    }
+
+    private void sendEvent(SseEmitter emitter, String name, Object payload) {
+        try {
+            Object body = payload;
+            MediaType mt = MediaType.TEXT_PLAIN;
+
+            if (payload instanceof Map || payload instanceof RealTimeTradeDTO) {
+                body = om.writeValueAsString(payload);
+                mt = MediaType.APPLICATION_JSON;
+            }
+
+            emitter.send(SseEmitter.event().name(name).data(body, mt));
+        } catch (Exception e) {
+            log.debug("sendEvent 실패 : {}", e.toString());
+        }
+    }
+
+    /**
+     * 즉시 종료되는 Emitter (장이 닫혀있을 때 등) 생성 유틸리티.
+     */
+    private SseEmitter closedEmitter(String event, String msg) {
+        SseEmitter emitter = new SseEmitter(0L);
+        sendEvent(emitter, event, msg);
+        safeComplete(emitter);
+        return emitter;
+    }
+
+    /**
+     * onError 상황에서 emitter.complete() 는 호출하지 않고 목록 정리만 수행.
+     */
+    private void removeEmitterOnly(String stockId, SseEmitter emitter) {
+        ReentrantLock lock = locks.computeIfAbsent(stockId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            List<SseEmitter> list = emitters.get(stockId);
+            if (list != null) {
+                list.remove(emitter);
+
+                // 해당 종목을 구독 중인 Emitter 가 더 이상 없으면 자원 정리 & KIS 구독 해지
+                if (list.isEmpty()) {
+                    emitters.remove(stockId);
+                    if (subscribed.remove(stockId)) {
+                        log.info("[{}] ⏹️  마지막 구독자 종료 → KIS unsubscribe", stockId);
+                        kisClient.queueUnsubscribe(stockId);
+                    }
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+        // emitter.complete() 호출 없음 → AsyncRequestNotUsableException 방지
+    }
+
+    /**
+     * timeout 또는 completion 이벤트에서 호출되어 emitter.complete() 까지 수행.
+     */
+    private void handleDisconnect(String stockId, SseEmitter emitter) {
+        removeEmitterOnly(stockId, emitter); // 목록 정리 재사용
+        safeComplete(emitter);              // complete() 호출은 여기서만
+    }
+
+    /**
+     * Emitter 를 안전하게 complete 처리. 이미 종료된 Emitter 에서 발생할 수 있는 예외를 흡수한다.
+     */
+    private void safeComplete(SseEmitter emitter) {
+        try {
+            emitter.complete();
+        } catch (IllegalStateException ignored) {
+            log.debug("Emitter unusable: {}", ignored.getMessage());
+        } catch (Exception ex) {
+            log.warn("SSE complete error", ex);
+        }
     }
 }
