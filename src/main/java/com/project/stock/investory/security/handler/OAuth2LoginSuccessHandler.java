@@ -35,7 +35,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtUtil.generateToken(
                 user.getUserId(),
                 user.getEmail(),
-                user.getName()
+                user.getName(),
+                user.getRole().name()
         );
 
         // 소셜 로그인 성공 후 프론트엔드로 토큰 전달

@@ -1,5 +1,6 @@
 package com.project.stock.investory.user.entity;
 
+import com.project.stock.investory.user.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -49,6 +50,10 @@ public class User {
 
     private LocalDateTime deletedAt;  // 탈퇴일 (soft delete)
 
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     // 사용자 정보 수정 메서드
     public void updateInfo(String name, String phone) {
         this.name = name;
@@ -85,6 +90,10 @@ public class User {
 
     public void enableSocialLogin() {
         this.isSocial = 1;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
 }

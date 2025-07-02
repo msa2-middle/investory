@@ -1,5 +1,6 @@
 package com.project.stock.investory.post.repository;
 
+import com.project.stock.investory.admin.dto.AdminPostResponseDto;
 import com.project.stock.investory.post.dto.PostWithAuthorDto;
 import com.project.stock.investory.post.entity.Board;
 import com.project.stock.investory.post.entity.Post;
@@ -57,5 +58,28 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "FROM Post p, User u WHERE p.userId = u.userId AND p.postId = :postId")
     Optional<PostWithAuthorDto> findPostWithAuthorById(@Param("postId") Long postId);
 
+    @Query("""
+    SELECT new com.project.stock.investory.post.dto.PostWithAuthorDto(
+        p.postId,
+        p.title,
+        p.content,
+        u.name
+    )
+    FROM Post p
+    JOIN User u ON p.userId = u.userId
+""")
+    List<PostWithAuthorDto> findAllPostsWithAuthor();
+
+    @Query("""
+    SELECT new com.project.stock.investory.admin.dto.AdminPostResponseDto(
+        p.postId,
+        p.title,
+        u.name,
+        p.createdAt
+    )
+    FROM Post p
+    JOIN User u ON p.userId = u.userId
+""")
+    List<AdminPostResponseDto> findAllAdminPostsWithAuthor();
 }
 

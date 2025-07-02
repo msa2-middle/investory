@@ -12,6 +12,7 @@ import com.project.stock.investory.security.CustomUserDetails;
 import com.project.stock.investory.stockAlertSetting.processor.StockPriceProcessor;
 import com.project.stock.investory.user.dto.*;
 import com.project.stock.investory.user.entity.User;
+import com.project.stock.investory.user.entity.enums.Role;
 import com.project.stock.investory.user.exception.*;
 import com.project.stock.investory.user.repository.UserRepository;
 import com.project.stock.investory.security.jwt.JwtUtil;
@@ -88,6 +89,7 @@ public class UserService {
                 .name(request.getName())
                 .phone(request.getPhone())
                 .isSocial(0)
+                .role(Role.USER)
                 .build();
 
         // DB 저장
@@ -123,10 +125,12 @@ public class UserService {
         }
 
         // AccessToken 생성
-        String accessToken  = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
+        String accessToken  = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName(),
+                user.getRole().name());
 
         // RefreshToken 생성
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName(),
+                user.getRole().name());
 
         user.updateRefreshToken(refreshToken);
         userRepository.save(user);
@@ -155,8 +159,10 @@ public class UserService {
             throw new InvalidRefreshTokenException();
         }
 
-        String newAccessToken = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName());
-        String newRefreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName());
+        String newAccessToken = jwtUtil.generateToken(user.getUserId(), user.getEmail(), user.getName(),
+                user.getRole().name());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getEmail(), user.getName(),
+                user.getRole().name());
 
         user.updateRefreshToken(newRefreshToken);
 

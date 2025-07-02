@@ -75,6 +75,9 @@ public class SecurityConfig {
                         // 댓글 조회 GET 요청 전체 공개
                         .requestMatchers(HttpMethod.GET, "/post/**").permitAll()
 
+                        // 관리자는 ADMIN 권한만 접근 가능
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
