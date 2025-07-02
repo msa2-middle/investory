@@ -68,13 +68,7 @@ public class KisWebSocketClientAlarm {
 
     @OnMessage
     public void onMessage(String message) {
-<<<<<<< HEAD
         System.out.println("[ALARM-RECEIVED] " + message);
-=======
-//        System.out.println("[RECEIVED] " + message);
-        System.out.println("[ALARM-RECEIVED- 민희가 받는 데이터] " + message);
->>>>>>> ddc445e0100937b2ac2d540b07593b2ef0bf34cb
-
 
         try {
             // JSON 메시지일 경우 pass
@@ -143,15 +137,6 @@ public class KisWebSocketClientAlarm {
             // JSON 출력
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonMessage);
-//            System.out.println(json);
-
-            // 1. JSON 문자열 파싱
-            JsonNode root = objectMapper.readTree(json);
-
-            String stockCode = root.at("/data/stock_code").asText();
-            int currentPrice = root.at("/data/current_price").asInt();
-
-//            System.out.println(stockCode + "   " + currentPrice);
             System.out.println("[ALARM-JSON] " + json);
 
             // 🔥 알람 처리: 추정 현재가 사용 (이벤트 발행)
