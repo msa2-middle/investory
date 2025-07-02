@@ -140,7 +140,7 @@ public class StockPriceProcessor {
 
     public void process(String stockCode, int currentPrice) {
         try {
-            log.debug("주식 가격 처리: 종목={}, 현재가={}", stockCode, currentPrice);
+//            log.debug("주식 가격 처리: 종목={}, 현재가={}", stockCode, currentPrice);
             checkAndNotify(stockCode, currentPrice);
         } catch (Exception e) {
             log.error("주식 가격 처리 중 오류 발생: 종목={}, 현재가={}", stockCode, currentPrice, e);

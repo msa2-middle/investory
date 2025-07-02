@@ -50,7 +50,7 @@ public class StockAlertEventListener {
     @Async
     public void handleStockPriceEvent(StockPriceEvent event) {
         try {
-            log.debug("주가 이벤트 처리: 종목={}, 가격={}", event.getStockCode(), event.getCurrentPrice());
+//            log.debug("주가 이벤트 처리: 종목={}, 가격={}", event.getStockCode(), event.getCurrentPrice());
             // 🔥 StockPriceProcessor로 주가 데이터 전달
             stockPriceProcessor.process(event.getStockCode(), event.getCurrentPrice());
         } catch (Exception e) {

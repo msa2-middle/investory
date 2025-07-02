@@ -71,7 +71,7 @@ public class KisWebSocketClientAlarm {
 
     @OnMessage
     public void onMessage(String message) {
-        System.out.println("[ALARM-RECEIVED] " + message);
+//        System.out.println("[ALARM-RECEIVED] " + message);
 
         if (isApplicationShuttingDown) {
             return; // 종료 중이면 처리 중단
@@ -95,7 +95,7 @@ public class KisWebSocketClientAlarm {
             String seq = parts[2];
             String payload = parts[3];
 
-            System.out.println("[ALARM-DEBUG] tr_id: " + trId + ", seq: " + seq);
+//            System.out.println("[ALARM-DEBUG] tr_id: " + trId + ", seq: " + seq);
 
             // 호가 데이터 처리
             if (!"H0STASP0".equals(trId)) {
@@ -104,11 +104,11 @@ public class KisWebSocketClientAlarm {
             }
 
             String[] fields = payload.split("\\^");
-            System.out.println("[ALARM-DEBUG] 파싱된 필드 수: " + fields.length);
+//            System.out.println("[ALARM-DEBUG] 파싱된 필드 수: " + fields.length);
 
             // 필드 수 체크 (호가 데이터는 보통 50개 이상)
             if (fields.length < 23) {
-                System.out.println("[ALARM-WARN] 호가 데이터 필드 수 부족: " + fields.length);
+//                System.out.println("[ALARM-WARN] 호가 데이터 필드 수 부족: " + fields.length);
                 return;
             }
 
@@ -145,13 +145,10 @@ public class KisWebSocketClientAlarm {
             // JSON 출력
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonMessage);
-            System.out.println("[ALARM-JSON] " + json);
+//            System.out.println("[ALARM-JSON] " + json);
 
             // 🔥 알람 처리: 추정 현재가 사용 (이벤트 발행)
-            System.out.println("[ALARM-PROCESS] 종목: " + stockCode +
-                    ", 매도1호가: " + askPrice1 +
-                    ", 매수1호가: " + bidPrice1 +
-                    ", 추정현재가: " + estimatedCurrentPrice);
+//            System.out.println("[ALARM-PROCESS] 종목: " + stockCode + ", 매도1호가: " + askPrice1 + ", 매수1호가: " + bidPrice1 + ", 추정현재가: " + estimatedCurrentPrice);
 
             // 🔥 이벤트 발행으로 StockPriceProcessor에 전달
             if (!isApplicationShuttingDown) {
