@@ -7,12 +7,17 @@ import java.time.LocalDate;
 
 
 @Entity
-@Table(name = "stock_price")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(
+        name = "stock_price",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_stock_trade_date", columnNames = {"stock_id", "trade_date"})
+        }
+)
 public class StockPriceHistory {
 
     @Id

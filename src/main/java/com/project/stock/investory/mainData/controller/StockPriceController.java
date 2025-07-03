@@ -39,11 +39,9 @@ public class StockPriceController {
 
 
     /**
-     * [price history api]
+     * [price history 조회]
      * 1. DB의 stock price history 조회
      * 2. 100영업일 데이터 가져오기
-     * 3. 데이터 save api
-     * 4. 티커별 데이터 save api
      */
     @Operation(summary = "DB의 stock price history 조회")
     @GetMapping("/{stockId}/history")
@@ -72,20 +70,29 @@ public class StockPriceController {
 
 
     // get 특정 종목 100개 가격 데이터
-    @Operation(summary = "get 특정 종목 100개 가격 데이터 ")
+    @Operation(summary = "get 특정 종목 100개 가격 데이터(Y, W, D")
     @GetMapping("/api/{stockId}/history")
     public List<StockPriceHistoryDto> getStockPriceHistory(
             @PathVariable String stockId,
-            @RequestParam String period
+            @RequestParam String period,
+            @RequestParam String periodDiv
     ) {
 
-        return stockPriceHistoryService.getStockPriceHistory(stockId, period);
+        return stockPriceHistoryService.getStockPriceHistory(stockId, period, periodDiv);
     }
 
 
+    /**
+     * [save]
+     * 1. 특정 종목 가격 데이터 조회 및 save"
+     * 2. 특정 종목의 오늘 주가(Daily) 데이터 저장
+     * 3. 여러 티커 가져와서 가격 데이터 저장
+     * 4. 시가총액 종목들의 일주일치 Daily 데이터 저장
+     */
+
     // 특정 종목 가격 데이터 조회 및 save
-    @Operation(summary = "특정 종목 가격 데이터 조회 및 save")
-    @PostMapping("/save/{stockId}")
+    @Operation(summary = "[TEST]특정 종목 가격 데이터 조회 및 save")
+    @PostMapping("/save/history/{stockId}")
     public ResponseEntity<String> fetchAndSaveStockPriceHistory(
             @PathVariable String stockId,
             @RequestParam String period
@@ -109,10 +116,20 @@ public class StockPriceController {
         }
     }
 
+    @Operation(summary = "[TEST]특정 종목의 오늘 주가(Daily) 데이터 저장")
+    @PostMapping("/save/daily/{stockId}")
+    public ResponseEntity<String> saveDailyPrice(@PathVariable String stockId) {
+        try {
+            stockPriceSaveService.saveDailyPrice(stockId);
+            return ResponseEntity.ok("주가 이력 데이터 저장 완료: " + stockId);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("저장 중 오류 발생: " + e.getMessage());
+        }
+    }
 
     // 여러 티커 가져와서 가격 데이터 저장
-    @Operation(summary = "여러 티커 가져와서 가격 데이터 저장")
-    @PostMapping("/save/all")
+    @Operation(summary = "[TEST]시가총액 100종목 가격 추이 데이터 저장(stock_id, trade_date unique적용)")
+    @PostMapping("/save/history")
     public String saveAllTicker(@RequestParam String period) {
         try {
             stockPriceSaveService.saveAllTicker(period);
@@ -120,6 +137,17 @@ public class StockPriceController {
         } catch (Exception e) {
             e.printStackTrace();
             return "저장 실패: " + e.getMessage();
+        }
+    }
+
+    @Operation(summary = "[TEST]시가총액 100종목들의 일주일치 Daily 데이터 저장(stock_id, trade_date unique적용)")
+    @PostMapping("/save/daily/ticker")
+    public ResponseEntity<String> saveDailyPriceTicker() {
+        try {
+            stockPriceSaveService.saveDailyPriceTicker();
+            return ResponseEntity.ok("시가총액 종목들의 Daily 데이터 저장 완료");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("저장 중 오류 발생: " + e.getMessage());
         }
     }
 
