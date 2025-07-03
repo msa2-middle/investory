@@ -2,6 +2,7 @@ package com.project.stock.investory.user.service;
 
 import com.project.stock.investory.user.entity.OAuthUser;
 import com.project.stock.investory.user.entity.User;
+import com.project.stock.investory.user.entity.enums.Role;
 import com.project.stock.investory.user.repository.OAuthUserRepository;
 import com.project.stock.investory.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -69,6 +70,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .email(email)
                     .password(null) // 새 소셜 회원은 비밀번호 없음
                     .name(name)
+                    .role(Role.USER)
                     .isSocial(1)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
@@ -100,7 +102,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 소셜 로그인 사용자 인증 객체 생성
         // DefaultOAuth2User 생성 시 권한 정보(authorities)가 필수이므로 최소 권한 ROLE_USER 부여
         return new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + Role.USER.name())),
                 extendedAttributes,
                 "email"
         );
