@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CommentSimpleResponseDto {
     private Long commentId;  // 댓글 ID
+    private Long postId;         // 게시글 ID
     private String content;  // 댓글 내용
     private LocalDateTime createdAt;
 }
