@@ -51,6 +51,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
+	// Redis 관련 의존성 추가
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+	// JSON 직렬화를 위한 Jackson (보통 이미 포함되어 있음)
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
 
 
 

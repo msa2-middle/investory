@@ -7,6 +7,7 @@ import com.project.stock.investory.stockAlertSetting.model.AlertCondition;
 import com.project.stock.investory.stockAlertSetting.model.ConditionType;
 import com.project.stock.investory.stockAlertSetting.model.StockAlertSetting;
 import com.project.stock.investory.stockAlertSetting.repository.StockAlertSettingRepository;
+import com.project.stock.investory.stockAlertSetting.service.CacheService;
 import com.project.stock.investory.stockInfo.model.Stock;
 import com.project.stock.investory.stockInfo.repository.StockRepository;
 import com.project.stock.investory.user.entity.User;
@@ -15,9 +16,13 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.core.env.Environment;
+
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +37,8 @@ public class StockPriceProcessor {
     private final StockRepository stockRepository;
     private final StockAlertSettingRepository stockAlertSettingRepository;
     private final AlarmHelper alarmHelper;
-    private final ApplicationEventPublisher eventPublisher; // 🔥 WebSocket 대신 이벤트 사용
+    private final ApplicationEventPublisher eventPublisher;
+    private final CacheService cacheService; // 🔥 Redis 캐시 서비스 추가
 
     // 가격 이상 조건들 (목표가를 오름차순으로 정렬)
     private final Map<String, NavigableMap<Integer, List<AlertCondition>>> overMap = new ConcurrentHashMap<>();
@@ -41,28 +47,44 @@ public class StockPriceProcessor {
 
     // 이미 알림을 보낸 조건들을 추적 (중복 방지)
     private final Set<Long> processedAlerts = ConcurrentHashMap.newKeySet();
-
-    // 사용자 및 주식 정보 캐시 (성능 최적화)
-    private final Map<Long, User> userCache = new ConcurrentHashMap<>();
-    private final Map<String, Stock> stockCache = new ConcurrentHashMap<>();
+    private final Environment environment; // 🔥 이 줄 추가
 
     @PostConstruct
     public void init() {
         loadAllConditions();
-        loadCaches();
-        log.info("StockPriceProcessor 초기화 완료");
+        log.info("StockPriceProcessor 초기화 완료 (Redis 캐시 적용)");
     }
 
-    // 🔥 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화) - 수정됨
+    // 🔥 주기적으로 새로운 알람 설정을 로드 (30분마다 - 백업용 동기화)
     @Scheduled(fixedRate = 1800000)
     public void refreshConditions() {
         log.info("주기적 동기화 시작 (백업용)");
         loadAllConditions();
-        refreshCaches();
+
+        // 🔥 필요한 경우에만 캐시 전체 삭제 (성능상 주석 처리)
+        // cacheService.evictAllUserCache();
+        // cacheService.evictAllStockCache();
 
         // 🔥 WebSocket 구독도 새로고침 (이벤트 발행)
         eventPublisher.publishEvent(StockAlertEvent.createRefresh());
     }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationStart() {
+        log.info("애플리케이션 시작 - 개발 환경 캐시 정리");
+        if (isDevEnvironment()) {
+            cacheService.evictAllUserCache();
+            cacheService.evictAllStockCache();
+            log.info("개발 환경 캐시 정리 완료");
+        }
+    }
+
+    private boolean isDevEnvironment() {
+        return Arrays.asList(environment.getActiveProfiles()).contains("dev") ||
+                Arrays.asList(environment.getActiveProfiles()).isEmpty(); // default profile
+    }
+
+
 
     private void loadAllConditions() {
         try {
@@ -83,7 +105,6 @@ public class StockPriceProcessor {
     }
 
     public void loadConditions(List<StockAlertSetting> settings) {
-
         for (StockAlertSetting setting : settings) {
             try {
                 AlertCondition condition = new AlertCondition(
@@ -94,7 +115,6 @@ public class StockPriceProcessor {
                         setting.getCondition());
 
                 if (condition.getCondition() == ConditionType.ABOVE) {
-
                     overMap.computeIfAbsent(
                             condition.getStockCode(),
                             k -> new TreeMap<>() // 오름차순 정렬
@@ -117,26 +137,25 @@ public class StockPriceProcessor {
         }
     }
 
-    private void loadCaches() {
-        try {
-            // 사용자 캐시 로드
-            userRepository.findAll().forEach(user -> userCache.put(user.getUserId(), user));
-
-            // 주식 정보 캐시 로드
-            stockRepository.findAll().forEach(stock -> stockCache.put(stock.getStockId(), stock));
-
-            log.info("캐시 로드 완료: 사용자 {}명, 주식 {}개", userCache.size(), stockCache.size());
-        } catch (Exception e) {
-            log.error("캐시 로드 중 오류 발생", e);
-        }
+    // 🔥 특정 사용자에게 알람이 있는지 확인 (새로 추가)
+    private boolean hasAnyAlertForUser(Long userId) {
+        return overMap.values().stream()
+                .flatMap(map -> map.values().stream())
+                .flatMap(List::stream)
+                .anyMatch(cond -> cond.getUserId().equals(userId)) ||
+                underMap.values().stream()
+                        .flatMap(map -> map.values().stream())
+                        .flatMap(List::stream)
+                        .anyMatch(cond -> cond.getUserId().equals(userId));
     }
 
-    private void refreshCaches() {
-        // 간단한 캐시 갱신 (실제로는 변경된 데이터만 갱신하는 것이 더 효율적)
-        userCache.clear();
-        stockCache.clear();
-        loadCaches();
+    // 🔥 settingId로부터 userId 조회 (새로 추가)
+    private Long getUserIdFromSettingId(Long settingId) {
+        return stockAlertSettingRepository.findById(settingId)
+                .map(setting -> setting.getUser().getUserId())
+                .orElse(null);
     }
+
 
     public void process(String stockCode, int currentPrice) {
         try {
@@ -153,7 +172,6 @@ public class StockPriceProcessor {
         if (overConditions != null) {
             // 현재가 이하의 모든 목표가들을 가져옴 (즉, 조건을 만족하는 것들)
             SortedMap<Integer, List<AlertCondition>> matched = overConditions.headMap(currentPrice, true);
-
             notifyAndRemove(matched, stockCode, currentPrice, "이상");
         }
 
@@ -167,8 +185,7 @@ public class StockPriceProcessor {
     }
 
     private void notifyAndRemove(
-            SortedMap<Integer,
-                    List<AlertCondition>> matched,
+            SortedMap<Integer, List<AlertCondition>> matched,
             String stockCode,
             int currentPrice,
             String conditionText
@@ -178,26 +195,35 @@ public class StockPriceProcessor {
         for (Map.Entry<Integer, List<AlertCondition>> entry : matched.entrySet()) {
             for (AlertCondition cond : entry.getValue()) {
                 try {
-                    // 중복 알림 방지
-                    if (processedAlerts.contains(cond.getSettingId())) {
+//                    // 중복 알림 방지 => 노션에다가 설명 적어 놓기
+//                    if (processedAlerts.contains(cond.getSettingId())) {
+//                        continue;
+//                    }
+
+                    // 중복 알림 방지 => 노션에다가 설명 적어 놓기
+                    if (!processedAlerts.add(cond.getSettingId())) {
                         continue;
                     }
 
                     log.info("[ALERT] userId={}, 종목={}, 현재가={}, 목표가={}, 조건={}",
                             cond.getUserId(), stockCode, currentPrice, cond.getTargetPrice(), cond.getCondition());
 
-                    // 캐시에서 사용자 정보 조회
-                    User user = userCache.get(cond.getUserId());
+                    // 🔥 Redis 캐시에서 사용자 정보 조회
+                    User user = cacheService.getUserFromCache(cond.getUserId());
                     if (user == null) {
-                        user = userRepository.findById(cond.getUserId()).orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + cond.getUserId()));
-                        userCache.put(cond.getUserId(), user); // 캐시 업데이트
+                        user = userRepository.findById(cond.getUserId())
+                                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + cond.getUserId()));
+                        // 🔥 캐시에 저장
+                        cacheService.putUserToCache(user);
                     }
 
-                    // 캐시에서 주식 정보 조회
-                    Stock stock = stockCache.get(stockCode);
+                    // 🔥 Redis 캐시에서 주식 정보 조회
+                    Stock stock = cacheService.getStockFromCache(stockCode);
                     if (stock == null) {
-                        stock = stockRepository.findById(stockCode).orElseThrow(() -> new EntityNotFoundException("주식을 찾을 수 없습니다: " + stockCode));
-                        stockCache.put(stockCode, stock); // 캐시 업데이트
+                        stock = stockRepository.findById(stockCode)
+                                .orElseThrow(() -> new EntityNotFoundException("주식을 찾을 수 없습니다: " + stockCode));
+                        // 🔥 캐시에 저장
+                        cacheService.putStockToCache(stock);
                     }
 
                     // 알람 보내기 실행
@@ -210,7 +236,6 @@ public class StockPriceProcessor {
 
                     // is_active 0으로 처리 후 저장
                     stockAlertSetting.updateIsActive();
-
                     stockAlertSettingRepository.save(stockAlertSetting);
 
                     // 처리 완료 표시 (중복 방지)
@@ -238,7 +263,7 @@ public class StockPriceProcessor {
         }
     }
 
-    // 🔥 새로운 알람 설정이 추가될 때 호출 (수정됨)
+    // 🔥 새로운 알람 설정이 추가될 때 호출
     public void addCondition(StockAlertSetting setting) {
         try {
             loadConditions(Collections.singletonList(setting));
@@ -253,7 +278,7 @@ public class StockPriceProcessor {
         }
     }
 
-    // 🔥 알람 설정이 삭제될 때 호출 (수정됨)
+    // 🔥 알람 설정이 삭제될 때 호출
     public void removeCondition(Long settingId, String stockCode, ConditionType conditionType, Integer targetPrice) {
         try {
             Map<String, NavigableMap<Integer, List<AlertCondition>>> targetMap =
@@ -273,11 +298,23 @@ public class StockPriceProcessor {
                 }
             }
 
-            // 🔥 수정: 조건 제거 후 해당 종목에 알람이 없는지 확인
+            // 🔥 조건 제거 후 해당 종목에 알람이 없는지 확인
             if (!hasAnyAlertForStock(stockCode)) {
                 log.info("종목 {}에 대한 모든 알람이 제거됨, WebSocket 구독 해제", stockCode);
+
+                // 🔥 Redis에서 해당 종목 캐시 삭제
+                cacheService.evictStockCache(stockCode);
+
                 eventPublisher.publishEvent(StockAlertEvent.createRemove(stockCode, settingId, conditionType, targetPrice));
             }
+
+            // 🔥 해당 사용자의 모든 알람이 삭제되었는지 확인 (추가할 코드)
+            if (!hasAnyAlertForUser(getUserIdFromSettingId(settingId))) {
+                Long userId = getUserIdFromSettingId(settingId);
+                log.info("사용자 {}의 모든 알람이 제거됨, 사용자 캐시 삭제", userId);
+                cacheService.evictUserCache(userId);
+            }
+
 
             processedAlerts.remove(settingId);
             log.info("알람 조건 삭제됨: settingId={}, stockCode={}", settingId, stockCode);
@@ -286,26 +323,34 @@ public class StockPriceProcessor {
         }
     }
 
-
     // 🔥 특정 종목에 알람이 있는지 확인
     private boolean hasAnyAlertForStock(String stockCode) {
         return (overMap.containsKey(stockCode) && !overMap.get(stockCode).isEmpty()) ||
                 (underMap.containsKey(stockCode) && !underMap.get(stockCode).isEmpty());
     }
 
-    // 사용자 캐시 업데이트 (생성/수정 시 사용)
+    // 🔥 Redis 캐시 관리 메서드들
     public void updateUserCache(User user) {
-        userCache.put(user.getUserId(), user);
+        cacheService.putUserToCache(user);
         log.info("사용자 캐시 업데이트: userId={}", user.getUserId());
     }
 
-    // 사용자 캐시 삭제
     public void removeUserCache(Long userId) {
-        userCache.remove(userId);
+        cacheService.evictUserCache(userId);
         log.info("사용자 캐시 삭제: userId={}", userId);
     }
 
-    // 🔥 주식 알람 설정 변경 시 조건 맵 업데이트 (수정됨)
+    public void updateStockCache(Stock stock) {
+        cacheService.putStockToCache(stock);
+        log.info("주식 캐시 업데이트: stockCode={}", stock.getStockId());
+    }
+
+    public void removeStockCache(String stockCode) {
+        cacheService.evictStockCache(stockCode);
+        log.info("주식 캐시 삭제: stockCode={}", stockCode);
+    }
+
+    // 🔥 주식 알람 설정 변경 시 조건 맵 업데이트
     public void updateStockAlertCondition(StockAlertSetting setting) {
         try {
             String stockCode = setting.getStock().getStockId();
