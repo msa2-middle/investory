@@ -55,7 +55,7 @@ src/
 ### 사전 요구사항
 - Java 21 이상
 - Gradle 8.x
-- Oracle Database (또는 H2 for development)
+- Mysql Database
 
 ### 설치 및 실행
 
@@ -86,16 +86,6 @@ Swagger UI를 통해 상세한 API 문서를 확인할 수 있습니다.
 
 - **개발 환경**: `http://localhost:8080/swagger-ui.html`
 - **운영 환경**: `https://your-domain.com/swagger-ui.html`
-
-## 🧪 테스트
-
-```bash
-# 전체 테스트 실행
-./gradlew test
-
-# 특정 테스트 실행
-./gradlew test --tests "com.project.stock.investory.*"
-```
 
 ## 🤝 팀원 소개
 
