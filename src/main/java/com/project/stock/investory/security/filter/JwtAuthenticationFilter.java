@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (isPermitAllPath(path)) {
+        if (isPermitAllPath(request)) {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 SecurityContextHolder.getContext().setAuthentication(
                         new UsernamePasswordAuthenticationToken("anonymousUser", null, Collections.emptyList())
@@ -73,30 +73,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
                 return;
             }
+        }else {
+            // JWT 헤더 없으면 anonymous 토큰 넣어줌
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                SecurityContextHolder.getContext().setAuthentication(
+                        new UsernamePasswordAuthenticationToken("anonymousUser", null, Collections.emptyList())
+                );
+            }
         }
-//        else {
-//            // JWT 헤더 없으면 anonymous 토큰 넣어줌
-//            SecurityContextHolder.getContext().setAuthentication(
-//                    new UsernamePasswordAuthenticationToken("anonymousUser", null, Collections.emptyList())
-//            );
-//        }
 
         // 6. 다음 필터로 넘김
         filterChain.doFilter(request, response);
     }
-    private boolean isPermitAllPath(String path) {
-        return path.startsWith("/main")
-                || path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/users/signup")
-                || path.startsWith("/users/login")
-                || path.startsWith("/oauth2")
-                || path.startsWith("/users/password-reset")
-                || path.startsWith("/users/refresh")
-                || path.startsWith("/stock")
-                || path.startsWith("/community/posts")
-                || path.startsWith("/alarm/storage")
-                || path.startsWith("/post")
-                || path.startsWith("/main");
+    private boolean isPermitAllPath(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        return
+                path.equals("/") // 루트도 허용
+                        || path.isEmpty()
+                        || (path.startsWith("/post") && "GET".equals(method))
+                        || path.startsWith("/swagger-ui")
+                        || path.startsWith("/v3/api-docs")
+                        || path.startsWith("/users/signup")
+                        || path.startsWith("/users/login")
+                        || path.startsWith("/oauth2")
+                        || path.startsWith("/users/password-reset")
+                        || path.startsWith("/users/refresh")
+                        || path.startsWith("/main")
+                        || path.startsWith("/api/main");
     }
 }
