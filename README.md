@@ -103,14 +103,14 @@ Swagger UI를 통해 상세한 API 문서를 확인할 수 있습니다.
 
 | 이름 | 역할 | 담당 업무 | GitHub                                     |
 |------|------|-----------|--------------------------------------------|
-| **팀원 1** | Team Leader & Backend | 프로젝트 총괄, 주식 정보 API 개발 | [@xeexin](https://github.com/xeexin)       |
+| **임희진** | Team Leader & Backend | 프로젝트 총괄, 주식 정보 API 개발 | [@xeexin](https://github.com/xeexin)       |
 | **팀원 2** | Backend Developer | 사용자 인증, 보안 시스템 개발 | [@username2](https://github.com/username2) |
 | **팀원 3** | Backend Developer | 커뮤니티 기능, 게시판 개발 | [@username3](https://github.com/username3) |
 | **팀원 4** | Backend Developer | 실시간 데이터 처리, WebSocket 개발 | [@username4](https://github.com/username4) |
 
 ### 🎯 개별 기여도
 
-#### 팀원 1 (Team Leader)
+#### 임희진 (Team Leader)
 - [ ] WebSocket 실시간 통신
 - [ ] 주식 데이터 스트리밍
 - [ ] 비동기 처리 최적화
